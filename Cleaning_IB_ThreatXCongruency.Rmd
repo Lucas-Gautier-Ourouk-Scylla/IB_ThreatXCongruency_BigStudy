@@ -527,6 +527,10 @@ data_CountFactors_pretest<- df %>%
 EFA_CountFactors_pretest <- factanal(data_CountFactors_pretest, factors=1, rotation = "promax") 
 print(EFA_CountFactors_pretest, digits = 2, cutoff = .3)
 
+# A Solution in 4 factors could also be used according to the test of the hypothesis that 4 factors are sufficient (p-value = 0.0813) and lead to similar results on this anxiety score:
+# EFA_CountFactors_pretest <- factanal(data_CountFactors_pretest, factors=4, rotation = "promax") 
+# print(EFA_CountFactors_pretest, digits = 2, cutoff = .3)
+
 ## Given that items c(Calm, Angry, Depressed, Happy) do not load with anxiety items to the same degree with others anxiety items, we decided not to aggregate them with the anxiety composite score according to our preregistration
 
 
@@ -559,6 +563,10 @@ data_CountFactors<- df %>%
 # Run the factorial analysis with an oblique rotation (promax)
 EFA_CountFactors <- factanal(data_CountFactors, factors=1, rotation = "promax") 
 print(EFA_CountFactors, digits = 2, cutoff = .3)
+
+# A Solution in 4 factors could also be used according to the test of the hypothesis that 4 factors are sufficient (p-value = 0.389) and lead to similar results on this anxiety score:
+# EFA_CountFactors <- factanal(data_CountFactors, factors=4, rotation = "promax") 
+# print(EFA_CountFactors, digits = 2, cutoff = .3)
 
 ## Given that items c(Calm, Angry, Depressed, Happy) do not load with anxiety items to the same degree with others anxiety items, we decided not to aggregate them with the anxiety composite score according to our preregistration
 
