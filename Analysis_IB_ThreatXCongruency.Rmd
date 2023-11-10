@@ -503,7 +503,15 @@ Anxiety_Pretest_Check <- lm(FearScore_pre ~ Threat_C, data = df)
 summary(Anxiety_Pretest_Check)
 rsq.partial(Anxiety_Pretest_Check)
 
-#TOSTtwo(alpha = alpha_ManipCheck, low_eqbound_d = -0.20, high_eqbound_d = 0.20)
+
+# Equivalence Testing 
+Anxiety_Pretest_Check_Table <- df %>%
+    group_by(Threat) %>%
+    summarise_at(vars(FearScore_pre), list(Mean = mean, SD = sd, Ppt_Nb = length))
+
+TOSTtwo(m1 = Anxiety_Pretest_Check_Table[[2,2]], sd1 = Anxiety_Pretest_Check_Table[[2,3]], n1 = Anxiety_Pretest_Check_Table[[2,4]],
+        m2 = Anxiety_Pretest_Check_Table[[1,2]], sd2 = Anxiety_Pretest_Check_Table[[1,3]], n2 = Anxiety_Pretest_Check_Table[[1,4]],
+        alpha = alpha_ManipCheck, low_eqbound_d = -0.20, high_eqbound_d = 0.20)
 
 
 # Did participants differ in there anxiety level at the end of the experiment ? 
@@ -512,7 +520,15 @@ Anxiety_Posttest_Check <- lm(FearScore_post ~ Threat_C, data = df)
 summary(Anxiety_Posttest_Check)
 rsq.partial(Anxiety_Posttest_Check)
 
-#TOSTtwo(alpha = alpha_ManipCheck, low_eqbound_d = -0.20, high_eqbound_d = 0.20)
+
+# Equivalence Testing 
+Anxiety_Posttest_Check_Table <- df %>%
+    group_by(Threat) %>%
+    summarise_at(vars(FearScore_post), list(Mean = mean, SD = sd, Ppt_Nb = length))
+
+TOSTtwo(m1 = Anxiety_Posttest_Check_Table[[2,2]], sd1 = Anxiety_Posttest_Check_Table[[2,3]], n1 = Anxiety_Posttest_Check_Table[[2,4]],
+        m2 = Anxiety_Posttest_Check_Table[[1,2]], sd2 = Anxiety_Posttest_Check_Table[[1,3]], n2 = Anxiety_Posttest_Check_Table[[1,4]],
+        alpha = alpha_ManipCheck, low_eqbound_d = -0.20, high_eqbound_d = 0.20)
 
 
 # Do the experimental manipulation have an effect on anxiety evolution between pre and post-measurements ?
@@ -521,7 +537,15 @@ Anxiety_Evolution_Check <- lm(FearScore ~ Threat_C, data = df)
 summary(Anxiety_Evolution_Check)
 rsq.partial(Anxiety_Evolution_Check)
 
-#TOSTtwo(alpha = alpha_ManipCheck, low_eqbound_d = -0.20, high_eqbound_d = 0.20)
+
+# Equivalence Testing 
+Anxiety_Evolution_Check_Table <- df %>%
+    group_by(Threat) %>%
+    summarise_at(vars(FearScore), list(Mean = mean, SD = sd, Ppt_Nb = length))
+
+TOSTtwo(m1 = Anxiety_Evolution_Check_Table[[2,2]], sd1 = Anxiety_Evolution_Check_Table[[2,3]], n1 = Anxiety_Evolution_Check_Table[[2,4]],
+        m2 = Anxiety_Evolution_Check_Table[[1,2]], sd2 = Anxiety_Evolution_Check_Table[[1,3]], n2 = Anxiety_Evolution_Check_Table[[1,4]],
+        alpha = alpha_ManipCheck, low_eqbound_d = -0.20, high_eqbound_d = 0.20)
 
 
 # Is the task effective for increase the level of anxiety in the threat condition ?
@@ -532,7 +556,26 @@ df_Threat <- df %>%
 Anxiety_Check_Threat <- lm(FearScore ~ 1, data = df_Threat)
 summary(alpha = alpha_ManipCheck, Anxiety_Check_Threat)
 
-#TOSTone(low_eqbound_d = -0.20, high_eqbound_d = 0.20)
+# The correlation on anxiety between the pre and the post measurement in the Threat condition
+Cor_Anxiety_PrePost_Threat <- cor.test(df_Threat$FearScore_pre, df_Threat$FearScore_post) 
+print(Cor_Anxiety_PrePost_Threat)
+
+# Equivalence Testing 
+Anxiety_Check_Threat_Table_Pre <- df_Threat %>%
+    group_by(Threat) %>%
+  summarise_at(vars(FearScore_pre), list(Mean = mean, SD = sd, Ppt_Nb = length)) %>%
+  mutate(Measurement = "Pretest")
+Anxiety_Check_Threat_Table_Post <- df_Threat %>%
+    group_by(Threat) %>%
+  summarise_at(vars(FearScore_post), list(Mean = mean, SD = sd, Ppt_Nb = length)) %>%
+  mutate(Measurement = "PostTest")
+Anxiety_Check_Threat_Table <- combine(Anxiety_Check_Threat_Table_Pre, Anxiety_Check_Threat_Table_Post)
+
+TOSTpaired(n = nrow(df_Threat), r12 = Cor_Anxiety_PrePost_Threat[["estimate"]][["cor"]],
+           m1 = Anxiety_Check_Threat_Table[[2,2]], sd1 = Anxiety_Check_Threat_Table[[2,3]], 
+           m2 = Anxiety_Check_Threat_Table[[1,2]], sd2 = Anxiety_Check_Threat_Table[[1,3]], 
+           alpha = alpha_ManipCheck, low_eqbound_dz = -0.20, high_eqbound_dz = 0.20)
+
 
 # Is the task ineffective for increase the level of anxiety in the control condition ?
 
@@ -542,7 +585,25 @@ df_Control <- df %>%
 Anxiety_Check_Control <- lm(FearScore ~ 1, data = df_Control)
 summary(Anxiety_Check_Control)
 
-#TOSTone(alpha = alpha_ManipCheck, low_eqbound_d = -0.20, high_eqbound_d = 0.20)
+# The correlation on anxiety between the pre and the post measurement in the Threat condition
+Cor_Anxiety_PrePost_Control <- cor.test(df_Control$FearScore_pre, df_Control$FearScore_post) 
+print(Cor_Anxiety_PrePost_Control)
+
+# Equivalence Testing 
+Anxiety_Check_Control_Table_Pre <- df_Control %>%
+    group_by(Threat) %>%
+  summarise_at(vars(FearScore_pre), list(Mean = mean, SD = sd, Ppt_Nb = length)) %>%
+  mutate(Measurement = "Pretest")
+Anxiety_Check_Control_Table_Post <- df_Control %>%
+    group_by(Threat) %>%
+  summarise_at(vars(FearScore_post), list(Mean = mean, SD = sd, Ppt_Nb = length)) %>%
+  mutate(Measurement = "PostTest")
+Anxiety_Check_Control_Table <- combine(Anxiety_Check_Control_Table_Pre, Anxiety_Check_Control_Table_Post)
+
+TOSTpaired(n = nrow(df_Threat), r12 = Cor_Anxiety_PrePost_Control[["estimate"]][["cor"]],
+           m1 = Anxiety_Check_Control_Table[[2,2]], sd1 = Anxiety_Check_Control_Table[[2,3]], 
+           m2 = Anxiety_Check_Control_Table[[1,2]], sd2 = Anxiety_Check_Control_Table[[1,3]], 
+           alpha = alpha_ManipCheck, low_eqbound_dz = -0.20, high_eqbound_dz = 0.20)
 
 ```
 
@@ -562,7 +623,15 @@ Arousal_Critical_Check<- lm(ArousalCritical ~ Threat_C, data = df)
 summary(Arousal_Critical_Check)
 rsq.partial(Arousal_Critical_Check)
 
-#TOSTtwo(alpha = alpha_ManipCheck, low_eqbound_d = -0.20, high_eqbound_d = 0.20)
+
+# Equivalence Testing 
+Arousal_Critical_Check_Table <- df %>%
+    group_by(Threat) %>%
+    summarise_at(vars(ArousalCritical), list(Mean = mean, SD = sd, Ppt_Nb = length))
+
+TOSTtwo(m1 = Arousal_Critical_Check_Table[[2,2]], sd1 = Arousal_Critical_Check_Table[[2,3]], n1 = Arousal_Critical_Check_Table[[2,4]],
+        m2 = Arousal_Critical_Check_Table[[1,2]], sd2 = Arousal_Critical_Check_Table[[1,3]], n2 = Arousal_Critical_Check_Table[[1,4]],
+        alpha = alpha_ManipCheck, low_eqbound_d = -0.20, high_eqbound_d = 0.20)
 
 
 ```
@@ -582,7 +651,15 @@ Pleasure_Critical_Check<- lm(PleasureCritical ~ Threat_C, data = df)
 summary(Pleasure_Critical_Check)
 rsq.partial(Pleasure_Critical_Check)
 
-#TOSTtwo(alpha = alpha_ManipCheck, low_eqbound_d = -0.20, high_eqbound_d = 0.20)
+
+# Equivalence Testing 
+Pleasure_Critical_Check_Table <- df %>%
+    group_by(Threat) %>%
+    summarise_at(vars(PleasureCritical), list(Mean = mean, SD = sd, Ppt_Nb = length))
+
+TOSTtwo(m1 = Pleasure_Critical_Check_Table[[2,2]], sd1 = Pleasure_Critical_Check_Table[[2,3]], n1 = Pleasure_Critical_Check_Table[[2,4]],
+        m2 = Pleasure_Critical_Check_Table[[1,2]], sd2 = Pleasure_Critical_Check_Table[[1,3]], n2 = Pleasure_Critical_Check_Table[[1,4]],
+        alpha = alpha_ManipCheck, low_eqbound_d = -0.20, high_eqbound_d = 0.20)
 
 
 ```
@@ -599,7 +676,15 @@ SenseControl_Critical_Check<- lm(SenseControlCritical ~ Threat_C, data = df)
 summary(SenseControl_Critical_Check)
 rsq.partial(SenseControl_Critical_Check)
 
-#TOSTtwo(low_eqbound_d = -0.20, high_eqbound_d = 0.20)
+
+# Equivalence Testing 
+SenseControl_Critical_Check_Table <- df %>%
+    group_by(Threat) %>%
+    summarise_at(vars(SenseControlCritical), list(Mean = mean, SD = sd, Ppt_Nb = length))
+
+TOSTtwo(m1 = SenseControl_Critical_Check_Table[[2,2]], sd1 = SenseControl_Critical_Check_Table[[2,3]], n1 = SenseControl_Critical_Check_Table[[2,4]],
+        m2 = SenseControl_Critical_Check_Table[[1,2]], sd2 = SenseControl_Critical_Check_Table[[1,3]], n2 = SenseControl_Critical_Check_Table[[1,4]],
+        alpha = alpha_ManipCheck, low_eqbound_d = -0.20, high_eqbound_d = 0.20)
 
 
 ```
@@ -641,8 +726,17 @@ summary(Threat_Cong_Cov)
 odds.ratio(Threat_Cong_Cov) # Calculate ODD RATIO of the model
 rsq.partial(Threat_Cong_Cov) # Calculate an equivalent of R²p of the model
 
+
 # Equivalence testing
-#TOSTtwo.prop(alpha = .05,  prop1 =, prop2 =, n1 = , n2 =  ,low_eqbound = -.20, high_eqbound = .20)
+Table_Threat_Cong_Nb <- table(df_Cong$Threat, dnn = "Threatening_Condition")
+
+Table_NoticingCritic_Threat_Cong_Nb <- table(df_Cong$Noticing_Critic, df_Cong$Threat, dnn = c("Congruent_element_Noticing", "Threatening_Condition"))
+
+Table_NoticingCritic_Threat_Cong_Prop <- round(prop.table(table(df_Cong$Noticing_Critic, df_Cong$Threat, dnn = c("Congruent_element_Noticing", "Threatening_Condition")), margin = 2), digits = 2)
+
+TOSTtwo.prop(prop1 = Table_NoticingCritic_Threat_Cong_Prop[2, 2], n1 = Table_Threat_Cong_Nb[2],
+        prop2 = Table_NoticingCritic_Threat_Cong_Prop[2, 1], n2 = Table_Threat_Cong_Nb[1],
+        alpha = 0.05, low_eqbound = -.20, high_eqbound = .20)
 
 ```
 
@@ -665,7 +759,15 @@ odds.ratio(Threat_Incong_Cov) # Calculate ODD RATIO of the model
 rsq.partial(Threat_Incong_Cov) # Calculate an equivalent of R²p of the model
 
 # Equivalence testing
-#TOSTtwo.prop(alpha = .05,  prop1 =, prop2 =, n1 = , n2 =  ,low_eqbound = -.20, high_eqbound = .20)
+Table_Threat_Incong_Nb <- table(df_Incong$Threat, dnn = "Threatening_Condition")
+
+Table_NoticingCritic_Threat_Incong_Nb <- table(df_Incong$Noticing_Critic, df_Incong$Threat, dnn = c("Incongruent_element_Noticing", "Threatening_Condition"))
+
+Table_NoticingCritic_Threat_Incong_Prop <- round(prop.table(table(df_Incong$Noticing_Critic, df_Incong$Threat, dnn = c("Incongruent_element_Noticing", "Threatening_Condition")), margin = 2), digits = 2)
+
+TOSTtwo.prop(prop1 = Table_NoticingCritic_Threat_Incong_Prop[2, 2], n1 = Table_Threat_Incong_Nb[2],
+        prop2 = Table_NoticingCritic_Threat_Incong_Prop[2, 1], n2 = Table_Threat_Incong_Nb[1],
+        alpha = 0.05, low_eqbound = -.20, high_eqbound = .20)
 
 ```
 
@@ -705,7 +807,6 @@ rsq.partial(ThreatXCongruency_Cov) # Calculate an equivalent of R²p of the mode
 # Is there a correlation between Anxiety (the pre and post-measurement difference) and Arousal levels (measured after the critical trial) ?
 
 Cor_Anxiety_Arousal <- cor.test(df$FearScore, df$ArousalCritical) 
-# Cor_Anxiety_Arousal <- cor.test(df$FearScore_post, df$ArousalCritical) 
 print(Cor_Anxiety_Arousal)
 
 alpha_AnxietyArousal <- ifelse(Cor_Anxiety_Arousal[["p.value"]]<= 0.05 & Cor_Anxiety_Arousal[["estimate"]][["cor"]]<= 0.5, 0.05, (0.05/2))
@@ -738,9 +839,10 @@ summary(Anxiety_Cong_Cov)
 odds.ratio(Anxiety_Cong_Cov) # Calculate ODD RATIO of the model
 rsq.partial(Anxiety_Cong_Cov) # Calculate an equivalent of R²p of the model
 
+
 # Equivalence testing
-#Cor_Noticing_Anxiety_Cong <- cor.test(df_Cong$Noticing_Critic, df_Cong$FearScore) 
-#TOSTr(r = Cor_Noticing_Anxiety_Cong[["estimate"]][["cor"]], n = nrow(df_Cong), alpha = alpha_AnxietyArousal, low_eqbound_r = -.20, high_eqbound_r = .20)
+Cor_Noticing_Anxiety_Cong <- cor.test(df_Cong$Noticing_Critic, df_Cong$FearScore) 
+TOSTr(r = Cor_Noticing_Anxiety_Cong[["estimate"]][["cor"]], n = nrow(df_Cong), alpha = alpha_AnxietyArousal, low_eqbound_r = -.20, high_eqbound_r = .20)
 
 ##############################################################
 
@@ -759,9 +861,10 @@ summary(Arousal_Cong_Cov)
 odds.ratio(Arousal_Cong_Cov) # Calculate ODD RATIO of the model
 rsq.partial(Arousal_Cong_Cov) # Calculate an equivalent of R²p of the model
 
+
 # Equivalence testing
-#Cor_Noticing_Arousal_Cong <- cor.test(df_Cong$Noticing_Critic, df_Cong$ArousalCritical) 
-#TOSTr(r = Cor_Noticing_Arousal_Cong[["estimate"]][["cor"]], n = nrow(df_Cong), alpha = alpha_AnxietyArousal, low_eqbound_r = -.20, high_eqbound_r = .20)
+Cor_Noticing_Arousal_Cong <- cor.test(df_Cong$Noticing_Critic, df_Cong$ArousalCritical) 
+TOSTr(r = Cor_Noticing_Arousal_Cong[["estimate"]][["cor"]], n = nrow(df_Cong), alpha = alpha_AnxietyArousal, low_eqbound_r = -.20, high_eqbound_r = .20)
 
 ```
 
@@ -785,9 +888,10 @@ summary(Anxiety_Incong_Cov)
 odds.ratio(Anxiety_Incong_Cov) # Calculate ODD RATIO of the model
 rsq.partial(Anxiety_Incong_Cov) # Calculate an equivalent of R²p of the model
 
+
 # Equivalence testing
-#Cor_Noticing_Anxiety_Incong <- cor.test(df_Incong$Noticing_Critic, df_Incong$FearScore) 
-#TOSTr(r = Cor_Noticing_Anxiety_Incong[["estimate"]][["cor"]], n = nrow(df_Incong), alpha = alpha_AnxietyArousal, low_eqbound_r = -.20, high_eqbound_r = .20)
+Cor_Noticing_Anxiety_Incong <- cor.test(df_Incong$Noticing_Critic, df_Incong$FearScore) 
+TOSTr(r = Cor_Noticing_Anxiety_Incong[["estimate"]][["cor"]], n = nrow(df_Incong), alpha = alpha_AnxietyArousal, low_eqbound_r = -.20, high_eqbound_r = .20)
 
 ##############################################################
 
@@ -807,9 +911,10 @@ summary(Arousal_Incong_Cov)
 odds.ratio(Arousal_Incong_Cov) # Calculate ODD RATIO of the model
 rsq.partial(Arousal_Incong_Cov) # Calculate an equivalent of R²p of the model
 
+
 # Equivalence testing
-#Cor_Noticing_Arousal_Incong <- cor.test(df_Incong$Noticing_Critic, df_Incong$ArousalCritical) 
-#TOSTr(r = Cor_Noticing_Arousal_Incong[["estimate"]][["cor"]], n = nrow(df_Incong), alpha = alpha_AnxietyArousal, low_eqbound_r = -.20, high_eqbound_r = .20)
+Cor_Noticing_Arousal_Incong <- cor.test(df_Incong$Noticing_Critic, df_Incong$ArousalCritical) 
+TOSTr(r = Cor_Noticing_Arousal_Incong[["estimate"]][["cor"]], n = nrow(df_Incong), alpha = alpha_AnxietyArousal, low_eqbound_r = -.20, high_eqbound_r = .20)
 
 ```
 
@@ -1049,6 +1154,15 @@ Counting_Cong_Cov <- lm(Error_TrialCritic ~ Threat_C + PrimaryTask_C, data = df_
 summary(Counting_Cong_Cov)
 rsq.partial(Counting_Cong_Cov) 
 
+
+# Equivalence Testing 
+Counting_Cong_Table <- df %>%
+    group_by(Threat) %>%
+    summarise_at(vars(Error_TrialCritic), list(Mean = mean, SD = sd, Ppt_Nb = length))
+
+TOSTtwo(m1 = Counting_Cong_Table[[2,2]], sd1 = Counting_Cong_Table[[2,3]], n1 = Counting_Cong_Table[[2,4]],
+        m2 = Counting_Cong_Table[[1,2]], sd2 = Counting_Cong_Table[[1,3]], n2 = Counting_Cong_Table[[1,4]],
+        alpha = alpha_ManipCheck, low_eqbound_d = -0.30, high_eqbound_d = 0.30)
 
 # Equivalence testing
 #TOSTtwo(alpha = .05, low_eqbound_d = -0.30, high_eqbound_d = 0.30)
