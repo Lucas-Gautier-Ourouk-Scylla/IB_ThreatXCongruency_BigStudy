@@ -1,0 +1,679 @@
+---
+title: "Cleaning_IB_ThreatXCongruency"
+author: "Ourouk Scylla Lucas Gautier"
+date: '2023-11-10'
+output: html_document
+---
+# Aim of the script
+
+This script is the data cleaning for the project "IB_Threat*Congruency_Interaction". It use the last extraction of data collection which means n = 1922 participants who at least began the study.
+
+OSF link of this project is <https://osf.io/xhc25/> (preregistration is
+available at <https://osf.io/8ztcu>)
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+list.of.packages <- c("dplyr", "tidyverse", "readr", "psych", "ggplot2")
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages)
+invisible(lapply(list.of.packages, require, character.only = TRUE))
+
+#rm(list=ls()) # clear workspace
+rm("list.of.packages", "new.packages")
+
+df <- Initial_data <- read_csv("Raw_Data/data_Anonymous.csv")%>%
+  select(-"...1")
+
+```
+
+# CodeBook: 
+
+## Participant identification
+
+participant: a code name for each participant
+
+ID: An ID number for identify each participant
+
+ID_Yapper: The ID associated to each participant on the CrowdPanel plateform
+
+## Experimental Conditions
+
+PrimaryTask: Which instructions participants have to perform in terms of
+words\
+- WhiteFocus = Count bounces of Whites squares\
+- BlackFocus = Count bounces of Black squares
+
+PrimaryTask_C: Which instructions participants have to perform in terms
+of code\
+- -0.5 = White squares bounce counting condition\
+- +0.5 = Black squares bounce counting condition
+
+Congruency: Is the unexpected element congruent or incongruent with task settings in terms of words\
+- Incongruent = The unexpected element is incongruent with task settings (and ppts perform a inattentional blindness task with a low laod : 2 black squares and 2 white squares)\
+- Congruent = The unexpected element is congruent with task settings (and ppts perform a inattentional blindness task with a high laod : 4 black squares and 4 white squares)
+
+Congruency_C: Is the unexpected element congruent or incongruent with task settings in terms of code\
+- -0.5 = The unexpected element is incongruent with task settings (and ppts perform a inattentional blindness task with a low laod : 2 black squares and 2 white squares)\
+- +0.5 = The unexpected element is congruent with task settings (and ppts perform a inattentional blindness task with a high laod : 4 black squares and 4 white squares)
+
+
+Threat: Which experimental condition participants are assigned at (Threat VS control), in terms of words\
+- Control = Control condition (no sound during the IB task)\
+- Threat = Threat condition (an hazard alarm and screams during the IB task)
+
+Threat_C: Which experimental condition participants are assigned at (Threat VS control), in terms of code\
+- -0.5 = Control condition (a park)\
+- +0.5 = Threat condition (a fire)
+
+## Noticing
+
+Noticing_Critic: If participant report having seen something during the
+critical trial and report at least one characteristic of unexpected
+elements (color, feature, motion)\
+- 0 = Non noticer\
+- 1 = Noticer who report at least one good feature of the unexpected
+element
+
+Noticing_Divided: If participant report having seen something during the
+Divided attention trial and report at least one characteristic of unexpected
+elements (color, feature, motion)\
+- 0 = Non noticer\
+- 1 = Noticer who report at least one good feature of the unexpected
+element
+
+Noticing_Full: If participant report having seen something during the
+Full attention trial and report at least one characteristic of unexpected
+elements (color, feature, motion)\
+- 0 = Non noticer\
+- 1 = Noticer who report at least one good feature of the unexpected
+element
+
+## Self Assessment Manikin (SAM)
+
+This scale come from Sainz de Baranda et al., 2022 (SAM_UC3M4Safety)
+
+### Pleasure
+
+PleasureTrial1: Participant rating on the pleasure dimension of the Self Assessment Manikin after the first trial of the IB task. 
+- 1 = Negative feelings
+- 9 = Positive feelings
+
+PleasureCritical: Participant rating on the pleasure dimension of the Self Assessment Manikin after the critical trial of the IB task. 
+- 1 = Negative feelings
+- 9 = Positive feelings
+
+PleasureDivided: Participant rating on the pleasure dimension of the Self Assessment Manikin after the divided attention trial of the IB task. 
+- 1 = Negative feelings
+- 9 = Positive feelings
+
+
+### Arousal 
+
+ArousalTrial1: Participant rating on the arousal dimension of the Self Assessment Manikin after the first trial of the IB task. 
+- 1 = Calm
+- 9 = High excitation
+
+ArousalCritical: Participant rating on the arousal dimension of the Self Assessment Manikin after the critical trial of the IB task. 
+- 1 = Calm
+- 9 = High excitation
+
+ArousalDivided: Participant rating on the arousal dimension of the Self Assessment Manikin after the divided attention trial of the IB task. 
+- 1 = Calm
+- 9 = High excitation
+
+### Sense of control
+
+SenseControlTrial1: Participant rating on the sense of control dimension of the Self Assessment Manikin after the first trial of the IB task. 
+- 1 = Lack of control
+- 9 = Plenty of control
+
+SenseControlCritical: Participant rating on the sense of control dimension of the Self Assessment Manikin after the critical trial of the IB task. 
+- 1 = Lack of control
+- 9 = Plenty of control
+
+SenseControlDivided: Participant rating on thesense of control dimension of the Self Assessment Manikin after the divided attention trial of the IB task. 
+- 1 = Lack of control
+- 9 = Plenty of control
+
+
+## Bounce-counting performance
+
+Count_Trial1: Number of bounces counted during Trial1
+
+Count_TrialCritic: Number of bounces counted during Critical Trial
+
+Count_TrialDivided: Number of bounces counted during Divided Attention
+Trial
+
+Error_Trial1: absolute value of the difference between the real number
+of bounce and what the participant reports for Trial 1
+
+Error_TrialCritic: absolute value of the difference between the real
+number of bounce and what the participant reports for the Critical Trial
+
+Error_TrialDivided: absolute value of the difference between the real
+number of bounce and what the participant reports for the Divided
+Attention Trial
+
+
+## Anxiety scales
+
+### Anxiety scale Pre-test
+
+Participants answers on the anxiety scale at the beginning of the experiment:
+    - Angry_pretest: Participant answer on the angry item from the anxiety scale ("I currently feel angry"). Responses on a 7-likert scale, from 1 = "Not at all" to 7 = "Extremely".
+    - Anxious_pretest: Participant answer on the anxious item from the anxiety scale ("I currently feel anxious"). Responses on a 7-likert scale, from 1 = "Not at all" to 7 = "Extremely".
+    - Happy_pretest: Participant answer on the happy item from the anxiety scale ("I currently feel happy"). Responses on a 7-likert scale, from 1 = "Not at all" to 7 = "Extremely".
+    - Depressed_pretest: Participant answer on the depressed item from the anxiety scale ("I'm currently feeling depressed"). Responses on a 7-likert scale, from 1 = "Not at all" to 7 = "Extremely".
+    - Tense_pretest: Participant answer on the tense item from the anxiety scale ("I'm currently feeling tense"). Responses on a 7-likert scale, from 1 = "Not at all" to 7 = "Extremely".
+    - Calm_pretest: Participant answer on the calm item from the anxiety scale ("I'm currently feeling calm"). Responses on a 7-likert scale, from 1 = "Not at all" to 7 = "Extremely".
+    - Stressed_pretest: Participant answer on the stressed item from the anxiety scale ("I feel stressed at the moment"). Responses on a 7-likert scale, from 1 = "Not at all" to 7 = "Extremely".
+    - Nervous_pretest: Participant answer on the nervous item from the anxiety scale ("I'm currently feeling nervous"). Responses on a 7-likert scale, from 1 = "Not at all" to 7 = "Extremely".
+
+
+### Anxiety scale Post-test
+
+Participants answers on the anxiety scale after the IB task:
+    - Angry: Participant answer on the angry item from the anxiety scale ("I currently feel angry"). Responses on a 7-likert scale, from 1 = "Not at all" to 7 = "Extremely".
+    - Anxious: Participant answer on the anxious item from the anxiety scale ("I currently feel anxious"). Responses on a 7-likert scale, from 1 = "Not at all" to 7 = "Extremely".
+    - Happy: Participant answer on the happy item from the anxiety scale ("I currently feel happy"). Responses on a 7-likert scale, from 1 = "Not at all" to 7 = "Extremely".
+    - Depressed: Participant answer on the depressed item from the anxiety scale ("I'm currently feeling depressed"). Responses on a 7-likert scale, from 1 = "Not at all" to 7 = "Extremely".
+    - Tense: Participant answer on the tense item from the anxiety scale ("I'm currently feeling tense"). Responses on a 7-likert scale, from 1 = "Not at all" to 7 = "Extremely".
+    - Calm: Participant answer on the calm item from the anxiety scale ("I'm currently feeling calm"). Responses on a 7-likert scale, from 1 = "Not at all" to 7 = "Extremely".
+    - Stressed: Participant answer on the stressed item from the anxiety scale ("I feel stressed at the moment"). Responses on a 7-likert scale, from 1 = "Not at all" to 7 = "Extremely".
+    - Nervous: Participant answer on the nervous item from the anxiety scale ("I'm currently feeling nervous"). Responses on a 7-likert scale, from 1 = "Not at all" to 7 = "Extremely".
+    
+FearScore_pre: A factorial composite score of 4 anxiety items (Tense,
+Anxious, Nervous, Stressed) measured at the beginning of the experiment, using a Bartlett method
+
+FearScore_post: A factorial composite score of 4 anxiety items (Tense,
+Anxious, Nervous, Stressed) measured after the experimental induction, using a Bartlett method
+
+FearScore: The difference between the anxiety factorial score after the experimental induction and at the beginning of the experiment. Higher scores reflect an increasing of the anxiety feelings at the post-measurement in comparison to the pre-measurement (FearScore_post - FearScore_pre)
+
+FearMean_pre: A composite score of 4 anxiety items (Tense, Anxious, Tense,
+Stressed) measured at the beginning of the experiment, using a mean calculation rather than a factorial score
+
+FearMean_post: A composite score of 4 anxiety items (Tense, Anxious, Tense,
+Stressed) after the experimental induction, using a mean calculation rather than a factorial score
+
+FearMean: The difference between the anxiety mean score after the experimental induction and at the beginning of the experiment. Higher scores reflect an increasing of the anxiety feelings at the post-measurement in comparison to the pre-measurement (FearMean_post - FearMean_pre)
+
+
+## Exclusion variables
+
+- SoundCalibration: Check whether participants correctly heard sounds after sound calibration for this experiment. On this question participants who respond '1' were redirected to the next "Sound_Problem" question, whereas participants who respond '2' or '3' went directly to the Inattentional blindness task. Responses on this scale were: 
+    - NoSound: "I can't hear any sound."
+    - SoftSound: "I can hear the sound but it doesn't seem unpleasant to me even though my computer is at maximum volume."
+    - LoudSound: "I can hear the sound at a level that I personally find unpleasant."
+
+- SoundProblem: Participants who reported a problem on the "Sound_Calibration" question were redirected to this question in order to resolve their sound problem. Then if they responded '2' to this item, they were redirected to the "Sound_Calibration" questions. In an other way, they were directed to the end of the survey, stoping the experiment. Responses on this scale were: 
+    - NotSolved: "I have a sound problem: end this experiment."
+    - Solved: "I've solved my sound problem: restart the volume calibration."
+    
+    
+Check_Sound: Did participants hear any sound during the experiment 
+- -0.5 = Participants did not hear any sound\
+- +0.5 = Participant heard some sounds
+
+Check_Uncomfort: Did participants hear these sound at an uncomfortable level
+- -0.5 = Sound level was not uncomfortable\
+- +0.5 = Sound level was uncomfortable
+
+Check_Volume: Did participants change the volume of their computer after the sound calibration
+- -0.5 = Participants changed their sound level\
+- +0.5 = Participants do not change their sound level
+
+Knew: If participants have already done exactly the same task as this
+dynamic inattentional blindness task\
+- -0.5 = Never made exactly this task\
+- +0.5 = Ever made exactly this task
+
+KnewTask: If participants have already done a similar task but not
+exactly the same one\
+- -0.5 = No task knowledge\
+- +0.5 = Task knowledge
+
+KnewIB: If participants knew the inattentional blindness phenomenon
+befor to run the experiment\
+- -0.5 = No IB knowledge\
+- +0.5 = IB knowledge
+
+## Scarcity variables
+
+Subjective_SES: Participant self placement on the McArthur Subjective SES scale. A 10-point scale
+- 1 = the lowest social class in the society 
+- 10 = the highest social class in the society
+
+Pay_Distance: The number of days in which participant will receive a large amount of money
+- 1 = participant will be paid in the next day
+- 31 = participant will be paid in 31 day
+
+Pay_Amount: The amount of money participant will receive the next time he.she will be paid
+
+Pay_Month: The amount of money participants receive each month (by adding up their own money and that of their dependents)
+
+Household_Nb: The number of people in the household who live with this amount of money.
+
+Perceived Economic Scarcity Scale: Participants respond to this scale in a 7-point Likert Scale from 1 = Not at all, to 7 = Extremely 
+- PESS1: My income is low compared to others
+- PESS2: I feel that I have less money than I need
+- PESS3: I find it difficult to pay my bills and basic needs
+- PESS4: My income is insufficient to live decently 
+- PESS5: I do not have enough money to cover all my monthly expenses
+- PESS6: My limited income and savings make me uncertain about my future
+- PESS7: I can't stop thinking about the lack of money
+- PESS8: I worry about not having enough money
+
+
+
+## Demographics
+
+Age: Participant self rating on age
+
+Gender: Participant gender self identification\
+- 1 = Woman self identification\
+- 2 = Man self identification\
+- 3 = None of these
+
+Town: The town where participants live in
+
+Country: The country participant live in
+
+Studies: The highest level of education achieved by the participants
+- No qualification
+- Secondary schools certificate
+- CAP (certificate of professional competence) or BEP (Professional Studies Certificate)
+- Baccalaureate
+- BAC+1
+- BAC+2
+- BAC+3 
+- BAC+4
+- BAC+5
+- BAC+6
+- BAC+8
+- more than BAC+8
+
+CSP: Participant occupation
+- 1 = Farmer, farm operator
+- 2 = Craftsperson, shopkeeper, business owner
+- 3 = Executive and higher intellectual profession
+- 4 = Intermediate profession (e.g. teacher, nurse, social worker, etc.)
+- 5 = salaried employee
+- 6 = Manual worker
+- 7 = Retired
+- 8 = Student or in educational training
+- 9 = Not in employment or military
+- 10 = Don't know or can't answer
+- 11 = Other
+
+CSP_Other: If participant declare another occupation, they can fill in a blank space to specify it.
+
+Writing_Script_C: Do participant know any script that do not follows the Latin script (from left to right and up to down script). Another code for this variable
+
+Writing_Script: Do participant know any script that do not follows the Latin script (from left to right and up to down script). Another code for this variable
+- LatinScript = No
+- OtherScript = Yes
+
+Writing_Language: If participant declare another script, they can fill in a blank space to specify it.
+
+
+Game_Feelings: A blank space in which participants can add any feeling about this experiment
+
+
+## Rename and build variables
+
+```{r Rename variables}
+tmp <- df
+
+tmp <- tmp %>% 
+  group_by(participant) %>% 
+  mutate(ID=cur_group_id()) 
+
+tmp <- tmp %>%
+  mutate(PrimaryTask = case_when(chooserandom_Instruction_1 == 1 ~ "WhiteFocus", 
+                                 chooserandom_Instruction_1 == 2 ~ "BlackFocus")) %>%
+  mutate(PrimaryTask_C = case_when(chooserandom_Instruction_1 == 1 ~ -0.5, 
+                                   chooserandom_Instruction_1 == 2 ~ +0.5)) %>%
+  
+  mutate(Threat = case_when(chooserandom_Condition_1 == 1 ~ "Control", 
+                               chooserandom_Condition_1 == 2 ~ "Threat")) %>%
+  mutate(Threat_C = case_when(chooserandom_Condition_1 == 1 ~ -0.5, 
+                                 chooserandom_Condition_1 == 2 ~ +0.5)) %>%
+  
+  mutate(Congruency = case_when(chooserandom_Relevance_1 == 1 ~ "Incongruent", 
+                                chooserandom_Relevance_1 == 2 ~ "Congruent")) %>%
+  mutate(Congruency_C = case_when(chooserandom_Relevance_1 == 1 ~ -0.5, 
+                                  chooserandom_Relevance_1 == 2 ~ +0.5))
+
+tmp <- tmp %>%
+  rename(ID_Yapper = ID_Yapper_1) %>%
+  mutate(ID_Yapper = gsub('#', '', ID_Yapper))
+
+tmp <- tmp %>%
+  rename(Angry_pretest = Anxiety_feelings_Pretest_1) %>%
+  rename(Anxious_pretest = Anxiety_feelings_Pretest_2) %>%
+  rename(Happy_pretest = Anxiety_feelings_Pretest_3) %>%
+  rename(Depressed_pretest = Anxiety_feelings_Pretest_4) %>%
+  rename(Tense_pretest = Anxiety_feelings_Pretest_5) %>%
+  rename(Calm_pretest = Anxiety_feelings_Pretest_6) %>%
+  mutate(Calm_pretest_Recod = 8 - Calm_pretest) %>%
+  rename(Stressed_pretest = Anxiety_feelings_Pretest_7) %>%
+  rename(Nervous_pretest = Anxiety_feelings_Pretest_8) %>%
+  
+  rename(Angry = Emotion_1) %>%
+  rename(Anxious = Emotion_2) %>%
+  rename(Happy = Emotion_3) %>%
+  rename(Depressed = Emotion_4) %>%
+  rename(Tense = Emotion_5) %>%
+  rename(Calm = Emotion_6) %>%
+  mutate(Calm_Recod = 8 - Calm) %>%
+  rename(Stressed = Emotion_7) %>%
+  rename(Nervous = Emotion_8)
+
+
+tmp <- tmp %>%
+  mutate(SoundCalibration = case_when(SoundCalibration_1 == 1 ~ "NoSound", 
+                                      SoundCalibration_1 == 2 ~ "SoftSound",
+                                      SoundCalibration_1 == 3 ~ "LoudSound")) %>%
+  mutate(SoundProblem = case_when(SoundProblem_1 == 1 ~ "NotSolved", 
+                                  SoundProblem_1 == 2 ~ "Solved"))
+
+
+tmp <- tmp %>%
+  mutate(Count_Trial1 = case_when(Congruency == "Incongruent" ~ count_Trial1_Irrelevant_1, 
+                            Congruency == "Congruent" ~ count_Trial1_Relevant_1)) %>%
+  mutate(Count_TrialCritical = case_when(Congruency == "Incongruent" ~ count_Criticaltrial_Irrelevant_1, 
+                                   Congruency == "Congruent" ~ count_Criticaltrial_Relevant_1)) %>%
+  mutate(Count_TrialDivided = case_when(Congruency == "Incongruent" ~ count_Dividedtrial_Irrelevant_1, 
+                                  Congruency == "Congruent" ~ count_Dividedtrial_Relevant_1)) %>%
+  
+  
+    mutate(Error_Trial1 = case_when(PrimaryTask == "WhiteFocus" & Congruency == "Incongruent" ~ abs(Count_Trial1-10),
+                                 PrimaryTask == "BlackFocus" & Congruency == "Incongruent" ~ abs(Count_Trial1-11),
+                                 PrimaryTask == "WhiteFocus" & Congruency == "Congruent" ~ abs(Count_Trial1-23),
+                                 PrimaryTask == "BlackFocus" & Congruency == "Congruent" ~ abs(Count_Trial1-19))) %>%
+  mutate(Error_TrialCritic = case_when(PrimaryTask == "WhiteFocus" & Congruency == "Incongruent" ~ abs(Count_TrialCritical-12),
+                                       PrimaryTask == "BlackFocus" & Congruency == "Incongruent" ~ abs(Count_TrialCritical-14),
+                                       PrimaryTask == "WhiteFocus" & Congruency == "Congruent" ~ abs(Count_TrialCritical-23),
+                                       PrimaryTask == "BlackFocus" & Congruency == "Congruent" ~ abs(Count_TrialCritical-20))) %>%
+  mutate(Error_TrialDivided = case_when(PrimaryTask == "WhiteFocus" & Congruency == "Incongruent" ~ abs(Count_TrialDivided-8),
+                                        PrimaryTask == "BlackFocus" & Congruency == "Incongruent" ~ abs(Count_TrialDivided-8),
+                                        PrimaryTask == "WhiteFocus" & Congruency == "Congruent" ~ abs(Count_TrialDivided-24),
+                                        PrimaryTask == "BlackFocus" & Congruency == "Congruent" ~ abs(Count_TrialDivided-21))) %>%
+
+
+  mutate(PleasureTrial1 = case_when(Congruency == "Incongruent" ~ Pleasure_Trial1_Irrelevant_1, 
+                                    Congruency == "Congruent" ~ Pleasure_Trial1_Relevant_1)) %>%
+  mutate(PleasureCritical = case_when(Congruency == "Incongruent" ~ Pleasure_Criticaltrial_Irrelevant_1,
+                                      Congruency == "Congruent" ~ Pleasure_Criticaltrial_Relevant_1)) %>%
+  mutate(PleasureDivided = case_when(Congruency == "Incongruent" ~ Pleasure_Dividedtrial_Irrelevant_1, 
+                                     Congruency == "Congruent" ~ Pleasure_Dividedtrial_Relevant_1)) %>%
+  
+  
+  mutate(ArousalTrial1 = case_when(Congruency == "Incongruent" ~ Arousal_Trial1_Irrelevant_1, 
+                                   Congruency == "Congruent" ~ Arousal_Trial1_Relevant_1)) %>%
+  mutate(ArousalCritical = case_when(Congruency == "Incongruent" ~ Arousal_Criticaltrial_Irrelevant_1, 
+                                     Congruency == "Congruent" ~ Arousal_Criticaltrial_Relevant_1)) %>%
+  mutate(ArousalDivided = case_when(Congruency == "Incongruent" ~ Arousal_Dividedtrial_Irrelevant_1, 
+                                    Congruency == "Congruent" ~ Arousal_Dividedtrial_Relevant_1)) %>%
+  
+  
+  mutate(SenseControlTrial1 = case_when(Congruency == "Incongruent" ~ Control_Trial1_Irrelevant_1, 
+                                        Congruency == "Congruent" ~ Control_Trial1_Relevant_1)) %>%
+  mutate(SenseControlCritical = case_when(Congruency == "Incongruent" ~ Control_Criticaltrial_Irrelevant_1, 
+                                          Congruency == "Congruent" ~ Control_Criticaltrial_Relevant_1)) %>%
+  mutate(SenseControlDivided = case_when(Congruency == "Incongruent" ~ Control_Dividedtrial_Irrelevant_1, 
+                                         Congruency == "Congruent" ~ Control_Dividedtrial_Relevant_1))
+
+
+
+tmp <- tmp %>%
+  mutate(Noticing_Critic = case_when((IB_Criticaltrial_Irrelevant_1 == 1 & PrimaryTask == "WhiteFocus") & (IB_Feature_Criticaltrial_Irrelevant_1 == 3 | IB_Color_Criticaltrial_Irrelevant_1 == 2 | IB_Motion_Criticaltrial_Irrelevant_1 == 2) ~ 1, 
+                                     (IB_Criticaltrial_Irrelevant_1 == 1 & PrimaryTask == "BlackFocus") & (IB_Feature_Criticaltrial_Irrelevant_1 == 3 | IB_Color_Criticaltrial_Irrelevant_1 == 4 | IB_Motion_Criticaltrial_Irrelevant_1 == 2) ~ 1, 
+                                     
+                                     
+                                     (IB_Criticaltrial_Relevant_1 == 1 & PrimaryTask == "WhiteFocus") & (IB_Feature_Criticaltrial_Relevant_1 == 3 | IB_Color_Criticaltrial_Relevant_1 == 4 | IB_Motion_Criticaltrial_Relevant_1 == 2) ~ 1, 
+                                     (IB_Criticaltrial_Relevant_1 == 1 & PrimaryTask == "BlackFocus") & (IB_Feature_Criticaltrial_Relevant_1 == 3 | IB_Color_Criticaltrial_Relevant_1 == 2 | IB_Motion_Criticaltrial_Relevant_1 == 2) ~ 1,
+                                     TRUE ~ 0
+  ))
+
+
+
+tmp <- tmp %>%
+  mutate(Noticing_Divided = case_when((IB_Dividedtrial_Irrelevant_1 == 1 & PrimaryTask == "WhiteFocus") & (IB_Feature_Dividedtrial_Irrelevant_1 == 3 | IB_Color_Dividedtrial_Irrelevant_1 == 2 | IB_Motion_Dividedtrial_Irrelevant_1 == 2) ~ 1, 
+                              (IB_Dividedtrial_Irrelevant_1 == 1 & PrimaryTask == "BlackFocus") & (IB_Feature_Dividedtrial_Irrelevant_1 == 3 | IB_Color_Dividedtrial_Irrelevant_1 == 4 | IB_Motion_Dividedtrial_Irrelevant_1 == 2) ~ 1, 
+                              
+                              
+                              (IB_Dividedtrial_Relevant_1 == 1 & PrimaryTask == "WhiteFocus") & (IB_Feature_Dividedtrial_Relevant_1 == 3 | IB_Color_Dividedtrial_Relevant_1 == 4 | IB_Motion_Dividedtrial_Relevant_1 == 2) ~ 1, 
+                              (IB_Dividedtrial_Relevant_1 == 1 & PrimaryTask == "BlackFocus") & (IB_Feature_Dividedtrial_Relevant_1 == 3 | IB_Color_Dividedtrial_Relevant_1 == 2 | IB_Motion_Dividedtrial_Relevant_1 == 2) ~ 1,
+                              TRUE ~ 0
+  ))
+
+
+tmp <- tmp %>%
+  mutate(Noticing_Full = case_when((IB_Fulltrial_Irrelevant_1 == 1 & PrimaryTask == "WhiteFocus") & (IB_Feature_Fulltrial_Irrelevant_1 == 3 | IB_Color_Fulltrial_Irrelevant_1 == 2 | IB_Motion_Fulltrial_Irrelevant_1 == 2) ~ 1, 
+                              (IB_Fulltrial_Irrelevant_1 == 1 & PrimaryTask == "BlackFocus") & (IB_Feature_Fulltrial_Irrelevant_1 == 3 | IB_Color_Fulltrial_Irrelevant_1 == 4 | IB_Motion_Fulltrial_Irrelevant_1 == 2) ~ 1, 
+                              
+                              
+                              (IB_Fulltrial_Relevant_1 == 1 & PrimaryTask == "WhiteFocus") & (IB_Feature_Fulltrial_Relevant_1 == 3 | IB_Color_Fulltrial_Relevant_1 == 4 | IB_Motion_Fulltrial_Relevant_1 == 2) ~ 1, 
+                              (IB_Fulltrial_Relevant_1 == 1 & PrimaryTask == "BlackFocus") & (IB_Feature_Fulltrial_Relevant_1 == 3 | IB_Color_Fulltrial_Relevant_1 == 2 | IB_Motion_Fulltrial_Relevant_1 == 2) ~ 1,
+                              TRUE ~ 0
+  ))
+
+
+tmp <- tmp %>%
+  mutate(Check_Sound = case_when(Check_sound_1 == 2 ~ -0.5, 
+                                 Check_sound_1 == 1 ~ 0.5)) %>%
+  mutate(Check_Uncomfort = case_when(Check_Uncomfort_1 == 2 ~ -0.5, 
+                                 Check_Uncomfort_1 == 1 ~ 0.5)) %>%
+  mutate(Check_Volume = case_when(Check_Volume_1 == 1 ~ -0.5, 
+                                 Check_Volume_1 == 2 ~ 0.5)) %>%
+  
+  mutate(Knew = case_when(Connaissance_1 == 1 ~ -0.5, 
+                          Connaissance_1 == 2 ~ 0.5)) %>%
+  mutate(KnewTask = case_when(Connaissance_Task_1 == 1 ~ -0.5, 
+                              Connaissance_Task_1 == 2 ~ 0.5)) %>%
+  mutate(KnewIB = case_when(Connaissance_IB_1 == 1 ~ -0.5, 
+                            Connaissance_IB_1 == 2 ~ 0.5)) %>%
+  
+  rename(Subjective_SES = Subjective_SES_1) %>%
+  rename(Pay_Distance = Pay_Distance_1) %>%
+  rename(Household_Nb = Household_Nb_1) %>%
+  rename(Pay_Amount = Pay_Next_1) %>%
+  rename(Pay_Month = Pay_Month_1)  %>%
+  
+  rename(Age = Age_1) %>%
+  rename(Gender = Gender_1) %>%
+  rename(Town = Town_Country_1) %>%
+  rename(Country = Town_Country_2) %>%
+
+  mutate(Writing_Script = case_when(Writing_Script_1 == 1 ~ "LatinScript",
+                                    Writing_Script_1 == 2 ~ "OtherScript")) %>%
+  rename(Writing_Script_C = Writing_Script_1) %>%
+  rename(Writing_Language = Writing_Script_other) %>%
+    
+  rename(Studies = Etudes_1) %>%
+  rename(CSP = CSP_1) %>%
+  rename(CSP_Other = CSP_other) %>%
+  rename(Game_Feelings = Game_Feelings_1)
+
+df <- tmp %>%
+  ungroup(participant)
+
+rm(tmp)
+
+```
+
+
+## Anxiety score calculation
+
+```{r Anxiety Factorial Score}
+
+###### Calculation of a composite score with our 5 items of stress
+
+## Check if it is possible to agregate theses five measure (anxious, nervous, calm, tense, stressed) in an unique factor : 
+
+
+## Anxiety scale pre-test 
+
+# Select variables
+data_CountFactors_pretest<- df %>%
+  select(Happy_pretest, Angry_pretest, Depressed_pretest, Anxious_pretest, Tense_pretest, Stressed_pretest, Nervous_pretest, Calm_pretest_Recod) %>%
+  na.omit()
+
+# Run the factorial analysis with an oblique rotation (promax)
+EFA_CountFactors_pretest <- factanal(data_CountFactors_pretest, factors=1, rotation = "promax") 
+print(EFA_CountFactors_pretest, digits = 2, cutoff = .3)
+
+## Given that items c(Calm, Angry, Depressed, Happy) do not load with anxiety items to the same degree with others anxiety items, we decided not to aggregate them with the anxiety composite score according to our preregistration
+
+
+# Select relevant variables for this factorial score
+EFA_ScoreFacto_pretest <- df %>%
+  select(Anxious_pretest, Tense_pretest, Stressed_pretest, Nervous_pretest) %>%
+  na.omit()
+
+## Calculate a factorial score from these 4 measure of stress
+FactorialScore_pretest <- fa(EFA_ScoreFacto_pretest, nfactors=1, rotate = "promax", scores = "Bartlett")
+
+# Assign a threat score to each ppt
+EFA_ScoreFacto_pretest$FearScore_pre<- as.numeric(FactorialScore_pretest$scores) 
+
+#Uniq_Values <- EFA_ScoreFacto %>% count(Emotion_Anxious, Emotion_Tense, Emotion_Stressed, Emotion_Nervous, FearScore)
+
+# Add this score to the whole dataframe
+df <- left_join(df, unique(EFA_ScoreFacto_pretest))
+
+
+#####################################################################
+
+## Anxiety scale post-test 
+
+# Select variables
+data_CountFactors<- df %>%
+  select(Happy, Angry, Depressed, Anxious, Tense, Stressed, Nervous, Calm_Recod) %>%
+  na.omit()
+
+# Run the factorial analysis with an oblique rotation (promax)
+EFA_CountFactors <- factanal(data_CountFactors, factors=1, rotation = "promax") 
+print(EFA_CountFactors, digits = 2, cutoff = .3)
+
+## Given that items c(Calm, Angry, Depressed, Happy) do not load with anxiety items to the same degree with others anxiety items, we decided not to aggregate them with the anxiety composite score according to our preregistration
+
+
+# Select relevant variables for this factorial score
+EFA_ScoreFacto <- df %>%
+  select(Anxious, Tense, Stressed, Nervous) %>%
+  na.omit()
+
+## Calculate a factorial score from these 4 measure of stress
+FactorialScore <- fa(EFA_ScoreFacto, nfactors=1, rotate = "promax", scores = "Bartlett")
+
+# Assign a threat score to each ppt
+EFA_ScoreFacto$FearScore_post<- as.numeric(FactorialScore$scores) 
+
+#Uniq_Values <- EFA_ScoreFacto %>% count(Emotion_Anxious, Emotion_Tense, Emotion_Stressed, Emotion_Nervous, FearScore)
+
+# Add this score to the whole dataframe
+df <- left_join(df, unique(EFA_ScoreFacto))
+
+
+##################################
+
+# Calculating a mean rather than a factorial score
+df <- df %>% 
+  mutate(FearMean_pre = rowMeans(select(df,c(Anxious_pretest, Nervous_pretest, Stressed_pretest, Tense_pretest)))) %>%
+  mutate(FearMean_post = rowMeans(select(df,c(Anxious, Nervous, Stressed, Tense))))
+
+
+# Calculate Anxiety scores evolution between pre-measurement and post-measurement
+df <- df %>%
+  mutate(FearScore = FearScore_post - FearScore_pre) %>%
+  mutate(FearMean = FearMean_post - FearMean_pre)
+
+
+cor.test(df$FearScore,df$FearMean)
+
+# Removing unused elements in the environment
+rm(data_CountFactors, data_CountFactors_pretest, EFA_CountFactors, EFA_CountFactors_pretest, EFA_ScoreFacto, EFA_ScoreFacto_pretest, FactorialScore, FactorialScore_pretest)
+
+
+```
+
+
+## PESS Score calculation
+
+```{r PESS Factorial Score}
+
+###### Calculation of a composite score of economic scarcity
+
+## Check if it is possible to agregate the eight items of PESS in an unique factor : 
+
+# Select variables
+data_CountFactors_PESS<- df %>%
+  select(PESS_1, PESS_2, PESS_3, PESS_4, PESS_5, PESS_6, PESS_7, PESS_8) %>%
+  na.omit()
+
+# Run the factorial analysis with an oblique rotation (promax)
+EFA_CountFactors_PESS <- factanal(data_CountFactors_PESS, factors=1, rotation = "promax") 
+print(EFA_CountFactors_PESS, digits = 2, cutoff = .3)
+
+##################################
+
+# Calculate the Mean score of PESS
+df <- df %>% 
+  mutate(PESS_Mean = rowMeans(select(df,c(PESS_1, PESS_2, PESS_3, PESS_4, PESS_5, PESS_6, PESS_7, PESS_8))))
+
+
+# Removing unused elements in the environment
+rm(data_CountFactors_PESS, EFA_CountFactors_PESS)
+
+```
+
+
+## Reduce the dataframe
+
+
+```{r Reducing dataframe}
+
+# A dataframe for the Threat X Congruency project
+df_Final <- df %>% 
+  select(ID_Yapper, ID, participant, TIME_total, Game_Feelings, Age, Gender, Town, Country, Studies, CSP, CSP_Other, Writing_Script_C, Writing_Script, Writing_Language, 
+         SoundCalibration, SoundProblem, Check_Sound, Check_Uncomfort, Check_Volume, Knew, KnewTask, KnewIB, 
+         PrimaryTask, PrimaryTask_C, Congruency, Congruency_C, Threat, Threat_C,
+         Count_Trial1, Count_TrialCritical, Count_TrialDivided, Error_Trial1, Error_TrialCritic, Error_TrialDivided, 
+         PleasureTrial1, PleasureCritical, PleasureDivided, ArousalTrial1, ArousalCritical, ArousalDivided, SenseControlTrial1, SenseControlCritical, SenseControlDivided, 
+         Noticing_Critic, Noticing_Divided, Noticing_Full, 
+         Angry_pretest, Happy_pretest, Depressed_pretest, Calm_pretest_Recod, Nervous_pretest, Anxious_pretest, Tense_pretest, Stressed_pretest, 
+         Angry, Happy, Depressed, Calm_Recod, Nervous, Anxious, Tense, Stressed,
+         FearScore_pre, FearScore_post, FearScore, FearMean_pre, FearMean_post, FearMean)
+
+
+# A dataframe for the Scarcity project
+df_Scarcity <- df %>% 
+  select(ID_Yapper, ID, participant, TIME_total, Game_Feelings, Age, Gender, Town, Country, Studies, CSP, CSP_Other, Writing_Script_C, Writing_Script, Writing_Language, 
+         Subjective_SES, Pay_Distance, Pay_Amount, Pay_Month, Household_Nb, PESS_1, PESS_2, PESS_3, PESS_4, PESS_5, PESS_6, PESS_7, PESS_8, PESS_Mean, 
+         SoundCalibration, SoundProblem, Check_Sound, Check_Uncomfort, Check_Volume, Knew, KnewTask, KnewIB, 
+         PrimaryTask, PrimaryTask_C, Congruency, Congruency_C, Threat, Threat_C,
+         Count_Trial1, Count_TrialCritical, Count_TrialDivided, Error_Trial1, Error_TrialCritic, Error_TrialDivided, 
+         PleasureTrial1, PleasureCritical, PleasureDivided, ArousalTrial1, ArousalCritical, ArousalDivided, SenseControlTrial1, SenseControlCritical, SenseControlDivided, 
+         Noticing_Critic, Noticing_Divided, Noticing_Full, 
+         Angry_pretest, Happy_pretest, Depressed_pretest, Calm_pretest_Recod, Nervous_pretest, Anxious_pretest, Tense_pretest, Stressed_pretest, 
+         Angry, Happy, Depressed, Calm_Recod, Nervous, Anxious, Tense, Stressed,
+         FearScore_pre, FearScore_post, FearScore, FearMean_pre, FearMean_post, FearMean)
+
+```
+
+
+```{r save datframes}
+
+write.csv(df, file = "Transformed_Data/Dataset_AllVariables_ThreatXCongruency.csv")
+
+write.csv(df_Final, file = "Transformed_Data/Dataset_Final_ThreatXCongruency.csv")
+
+write.csv(df_Scarcity, file = "Transformed_Data/Dataset_Final_Scarcity.csv")
+
+```
+
