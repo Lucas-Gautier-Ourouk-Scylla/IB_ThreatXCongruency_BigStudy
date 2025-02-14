@@ -2,24 +2,29 @@
 title: "Analysis_IB_ThreatXCongruency"
 author: "Ourouk Scylla Lucas Gautier"
 date: '2023-11-10'
-output: html_document
-editor_options: 
-  markdown: 
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+editor_options:
+  markdown:
     wrap: 72
 ---
 
 # Aim of the script
 
 This script is the data analysis for the project
-"IB_Threat*Congruency_Interaction". It use the last extraction of data collection which means n = 1922 participants who at least began the study.
+"IB_Threat\*Congruency_Interaction". It use the last extraction of data
+collection which means n = 1922 participants who at least began the
+study.
 
 OSF link of this project is <https://osf.io/xhc25/> (preregistration is
 available at <https://osf.io/8ztcu>)
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE, include = FALSE)
 
-list.of.packages <- c("dplyr", "tidyverse", "readr", "psych", "ggplot2", "TOSTER", "rsq", "questionr")
+list.of.packages <- c("dplyr", "tidyverse", "readr", "psych", "ggplot2", "TOSTER", "rsq", "questionr", "esc", "pwr", "effectsize")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 invisible(lapply(list.of.packages, require, character.only = TRUE))
@@ -473,13 +478,16 @@ n = `r nrow(df)`
 
 # Analysis
 
+## Descriptive analysis
+
+`r warning("Add here some descriptive analyses of our variables")`
+
 ## Manipulation check
 
-### Anxiety feelings
-
-To check the effect of our manipulation on these variables, we will
-apply a Bonferroni Correction on these 3 analysis (Anxiety feelings,
-Arousal, Pleasure): .05/3 = 0.017
+To check the effect of our manipulation on these variables, we applied a
+Bonferroni Correction on these 3 analysis according to our
+pre-registration (Anxiety feelings, Arousal, Pleasure): alpha = 0.05/3 =
+0.017
 
 ```{r TOST boundaries, eval=FALSE}
 
@@ -492,6 +500,8 @@ powerTOSTone(alpha = .017, statistical_power = .95, N = 800)
 
 ```
 
+### Anxiety feelings
+
 
 ```{r Anxiety Manip check}
 
@@ -503,13 +513,15 @@ Anxiety_Pretest_Check <- lm(FearScore_pre ~ Threat_C, data = df)
 summary(Anxiety_Pretest_Check)
 rsq.partial(Anxiety_Pretest_Check)
 
+Report_Anxiety_Pretest_Check <- summary(Anxiety_Pretest_Check)
+
 
 # Equivalence Testing 
 Anxiety_Pretest_Check_Table <- df %>%
     group_by(Threat) %>%
     summarise_at(vars(FearScore_pre), list(Mean = mean, SD = sd, Ppt_Nb = length))
 
-TOSTtwo(m1 = Anxiety_Pretest_Check_Table[[2,2]], sd1 = Anxiety_Pretest_Check_Table[[2,3]], n1 = Anxiety_Pretest_Check_Table[[2,4]],
+Anxiety_Pretest_Check_Tost <- TOSTtwo(m1 = Anxiety_Pretest_Check_Table[[2,2]], sd1 = Anxiety_Pretest_Check_Table[[2,3]], n1 = Anxiety_Pretest_Check_Table[[2,4]],
         m2 = Anxiety_Pretest_Check_Table[[1,2]], sd2 = Anxiety_Pretest_Check_Table[[1,3]], n2 = Anxiety_Pretest_Check_Table[[1,4]],
         alpha = alpha_ManipCheck, low_eqbound_d = -0.20, high_eqbound_d = 0.20)
 
@@ -519,6 +531,8 @@ TOSTtwo(m1 = Anxiety_Pretest_Check_Table[[2,2]], sd1 = Anxiety_Pretest_Check_Tab
 Anxiety_Posttest_Check <- lm(FearScore_post ~ Threat_C, data = df)
 summary(Anxiety_Posttest_Check)
 rsq.partial(Anxiety_Posttest_Check)
+
+Report_Anxiety_Posttest_Check <- summary(Anxiety_Posttest_Check)
 
 
 # Equivalence Testing 
@@ -537,6 +551,7 @@ Anxiety_Evolution_Check <- lm(FearScore ~ Threat_C, data = df)
 summary(Anxiety_Evolution_Check)
 rsq.partial(Anxiety_Evolution_Check)
 
+Report_Anxiety_Evolution_Check <- summary(Anxiety_Evolution_Check)
 
 # Equivalence Testing 
 Anxiety_Evolution_Check_Table <- df %>%
@@ -554,7 +569,9 @@ df_Threat <- df %>%
   filter(Threat=="Threat")
   
 Anxiety_Check_Threat <- lm(FearScore ~ 1, data = df_Threat)
-summary(alpha = alpha_ManipCheck, Anxiety_Check_Threat)
+summary(Anxiety_Check_Threat)
+
+Report_Anxiety_Check_Threat <- summary(Anxiety_Check_Threat)
 
 # The correlation on anxiety between the pre and the post measurement in the Threat condition
 Cor_Anxiety_PrePost_Threat <- cor.test(df_Threat$FearScore_pre, df_Threat$FearScore_post) 
@@ -576,6 +593,17 @@ TOSTpaired(n = nrow(df_Threat), r12 = Cor_Anxiety_PrePost_Threat[["estimate"]][[
            m2 = Anxiety_Check_Threat_Table[[1,2]], sd2 = Anxiety_Check_Threat_Table[[1,3]], 
            alpha = alpha_ManipCheck, low_eqbound_dz = -0.20, high_eqbound_dz = 0.20)
 
+# Effect size
+Eta_Anxiety_Check_Threat <- esc::eta_squared(esc_mean_sd(
+  grp1m = Anxiety_Check_Threat_Table[1,2],
+  grp1sd = Anxiety_Check_Threat_Table[1,3],
+  grp1n = Anxiety_Check_Threat_Table[1,4],
+  grp2m = Anxiety_Check_Threat_Table[2,2],
+  grp2sd = Anxiety_Check_Threat_Table[2,3],
+  grp2n = Anxiety_Check_Threat_Table[2,4],
+  r = Cor_Anxiety_PrePost_Threat[["estimate"]][["cor"]],
+  es.type = c("d"))[["es"]][["Mean"]])
+
 
 # Is the task ineffective for increase the level of anxiety in the control condition ?
 
@@ -584,6 +612,8 @@ df_Control <- df %>%
   
 Anxiety_Check_Control <- lm(FearScore ~ 1, data = df_Control)
 summary(Anxiety_Check_Control)
+
+Report_Anxiety_Check_Control <- summary(Anxiety_Check_Control)
 
 # The correlation on anxiety between the pre and the post measurement in the Threat condition
 Cor_Anxiety_PrePost_Control <- cor.test(df_Control$FearScore_pre, df_Control$FearScore_post) 
@@ -605,14 +635,88 @@ TOSTpaired(n = nrow(df_Threat), r12 = Cor_Anxiety_PrePost_Control[["estimate"]][
            m2 = Anxiety_Check_Control_Table[[1,2]], sd2 = Anxiety_Check_Control_Table[[1,3]], 
            alpha = alpha_ManipCheck, low_eqbound_dz = -0.20, high_eqbound_dz = 0.20)
 
+# Effect size
+Eta_Anxiety_Check_Control <- esc::eta_squared(esc_mean_sd(
+  grp1m = Anxiety_Check_Control_Table[1,2],
+  grp1sd = Anxiety_Check_Control_Table[1,3],
+  grp1n = Anxiety_Check_Control_Table[1,4],
+  grp2m = Anxiety_Check_Control_Table[2,2],
+  grp2sd = Anxiety_Check_Control_Table[2,3],
+  grp2n = Anxiety_Check_Control_Table[2,4],
+  r = Cor_Anxiety_PrePost_Control[["estimate"]][["cor"]],
+  es.type = c("d"))[["es"]][["Mean"]])
+
 ```
+
+To analyse the effect of the experimental manipulation on anxiety
+feelings during the experiment, we run multiple linear regression
+analyses.
+
+First, we tested whether our two experimental conditions (Threat VS
+Control) differed in terms of anxiety feelings at the beginning of the
+experiment. This analysis reveals that there is `r ifelse(Report_Anxiety_Pretest_Check$coefficients[2,4]<= 0.05/3 ,"a significant", "a non significant")` effect of experimental condition on anxiety at the beginning of the experiment (*b* =
+`r round(Report_Anxiety_Pretest_Check$coefficients[2,1], digits = 2)`,
+*F*(`r Report_Anxiety_Pretest_Check$df[1]-1`, `r Report_Anxiety_Pretest_Check$df[2]`) =
+`r round(Report_Anxiety_Pretest_Check$coefficients[2,3], digits = 2)`, *p*<sub>corrected at 0.017</sub> 
+`r ifelse((Report_Anxiety_Pretest_Check$coefficients[2,4])<= 0.001 ,"< 0.001", ifelse((Report_Anxiety_Pretest_Check$coefficients[2,4])<= 0.01 ,"< 0.01", paste0("= ", round((Report_Anxiety_Pretest_Check$coefficients[2,4]), digit = 2))))`).
+
+
+Some Equivalent testing hypothesis tend to confirm the non-significant results suggesting that the participants do not differ on anxiety level at the beginning of the experiment (*z* = `r ifelse((Anxiety_Pretest_Check_Tost$TOST_t1)<(Anxiety_Pretest_Check_Tost$TOST_t2) ,round(Anxiety_Pretest_Check_Tost$TOST_t1, digit=2), round(Anxiety_Pretest_Check_Tost$TOST_t2, digit=2))`, *p*<sub>corrected at 0.017</sub>  `r ifelse((Anxiety_Pretest_Check_Tost$TOST_p1)>(Anxiety_Pretest_Check_Tost$TOST_p2) & (Anxiety_Pretest_Check_Tost$TOST_p1)<=0.001, "< 0.001", ifelse((Anxiety_Pretest_Check_Tost$TOST_p1)>(Anxiety_Pretest_Check_Tost$TOST_p2) & (Anxiety_Pretest_Check_Tost$TOST_p1)<= 0.01 ,"< 0.01", ifelse((Anxiety_Pretest_Check_Tost$TOST_p1)>(Anxiety_Pretest_Check_Tost$TOST_p2) & (Anxiety_Pretest_Check_Tost$TOST_p1)>= 0.01 , paste0("= ", round((Anxiety_Pretest_Check_Tost$TOST_p1), digit = 3)), ifelse((Anxiety_Pretest_Check_Tost$TOST_p1)<(Anxiety_Pretest_Check_Tost$TOST_p2) & (Anxiety_Pretest_Check_Tost$TOST_p2)<=0.001, "< 0.001", ifelse((Anxiety_Pretest_Check_Tost$TOST_p1)<(Anxiety_Pretest_Check_Tost$TOST_p2) & (Anxiety_Pretest_Check_Tost$TOST_p2)<= 0.01 ,"< 0.01", ifelse((Anxiety_Pretest_Check_Tost$TOST_p1)<(Anxiety_Pretest_Check_Tost$TOST_p2) & (Anxiety_Pretest_Check_Tost$TOST_p2)>= 0.01 , paste0("= ", round((Anxiety_Pretest_Check_Tost$TOST_p2), digit = 2))))))))`, with low equivalence bound = `r Anxiety_Pretest_Check_Tost$low_eqbound_d`, high equivalent bound  = `r Anxiety_Pretest_Check_Tost$high_eqbound_d`, and `r round(100-(5/3*2), digit=1)`% CI [`r round(Anxiety_Pretest_Check_Tost$LL_CI_TOST, digit=3)`, `r round(Anxiety_Pretest_Check_Tost$UL_CI_TOST, digit=3)`]). Participants in the threatening condition (M =
+`r round(Anxiety_Pretest_Check_Table[[2,2]], digit = 2)`, SD =
+`r round(Anxiety_Pretest_Check_Table[[2,3]], digit = 2)`, n =
+`r round(Anxiety_Pretest_Check_Table[[2,4]], digit = 2)`) report as much anxiety as participants the control condition (M =
+`r round(Anxiety_Pretest_Check_Table[[1,2]], digit = 2)`, SD =
+`r round(Anxiety_Pretest_Check_Table[[1,3]], digit = 2)`, n =
+`r round(Anxiety_Pretest_Check_Table[[1,4]], digit = 2)`).
+
+Second, we tested the effect of experimental conditions (Threat VS
+Control) on anxiety feelings at the end of the
+experiment. This analysis reveals that there is `r ifelse(Report_Anxiety_Posttest_Check$coefficients[2,4]<= 0.05/3 ,"a significant", "a non significant")` effect of experimental condition on anxiety at the end of the experiment (*b* =
+`r round(Report_Anxiety_Posttest_Check$coefficients[2,1], digits = 2)`,
+*F*(`r Report_Anxiety_Posttest_Check$df[1]-1`, `r Report_Anxiety_Posttest_Check$df[2]`) =
+`r round(Report_Anxiety_Posttest_Check$coefficients[2,3], digits = 2)`, *p*<sub>corrected at 0.017</sub> 
+`r ifelse((Report_Anxiety_Posttest_Check$coefficients[2,4])<= 0.001 ,"< 0.001", ifelse((Report_Anxiety_Posttest_Check$coefficients[2,4])<= 0.01 ,"< 0.01", paste0("= ", round((Report_Anxiety_Posttest_Check$coefficients[2,4]), digit = 2))))`, η² = `r round(rsq.partial(Anxiety_Posttest_Check)[[3]], digit = 3)`). Participants in the threatening condition (M =
+`r round(Anxiety_Posttest_Check_Table[[2,2]], digit = 2)`, SD =
+`r round(Anxiety_Posttest_Check_Table[[2,3]], digit = 2)`, n =
+`r round(Anxiety_Posttest_Check_Table[[2,4]], digit = 2)`) report significantly higher anxiety at the end of the experiment than participants in the control condition (M =
+`r round(Anxiety_Posttest_Check_Table[[1,2]], digit = 2)`, SD =
+`r round(Anxiety_Posttest_Check_Table[[1,3]], digit = 2)`, n =
+`r round(Anxiety_Posttest_Check_Table[[1,4]], digit = 2)`).
+
+
+Third, we tested whether there is an effect of experimental manipulation between pre and post measurement of anxiety feelings both in the threatening and the control conditions.
+
+In the threatening condition a simple linear regression using the difference between post and pre-measurement reveals that there is `r ifelse(Report_Anxiety_Check_Threat$coefficients[1,4]<= 0.05/3 ,"a significant", "a non significant")` effect of experimental condition on anxiety at the end of the experiment (*b* =
+`r round(Report_Anxiety_Check_Threat$coefficients[1,1], digits = 2)`,
+*F*(`r Report_Anxiety_Check_Threat$df[1]-1`, `r Report_Anxiety_Check_Threat$df[2]`) =
+`r round(Report_Anxiety_Check_Threat$coefficients[1,3], digits = 2)`, *p*<sub>corrected at 0.017</sub> 
+`r ifelse((Report_Anxiety_Check_Threat$coefficients[1,4])<= 0.001 ,"< 0.001", ifelse((Report_Anxiety_Check_Threat$coefficients[1,4])<= 0.01 ,"< 0.01", paste0("= ", round((Report_Anxiety_Check_Threat$coefficients[1,4]), digit = 2))))`, η² = `r round(Eta_Anxiety_Check_Threat, digit = 3)`). In the threatening condition, participants feel more anxious at the end of the experiment (M =
+`r round(Anxiety_Check_Threat_Table[[2,2]], digit = 2)`, SD =
+`r round(Anxiety_Check_Threat_Table[[2,3]], digit = 2)`) than at the beginning (M =
+`r round(Anxiety_Check_Threat_Table[[1,2]], digit = 2)`, SD =
+`r round(Anxiety_Check_Threat_Table[[1,3]], digit = 2)`, n =
+`r round(Anxiety_Check_Threat_Table[[1,4]], digit = 2)`).
+
+In the control condition a simple linear regression using the difference between post and pre-measurement reveals that there is `r ifelse(Report_Anxiety_Check_Control$coefficients[1,4]<= 0.05/3 ,"a significant", "a non significant")` effect of experimental condition on anxiety at the end of the experiment (*b* =
+`r round(Report_Anxiety_Check_Control$coefficients[1,1], digits = 2)`,
+*F*(`r Report_Anxiety_Check_Control$df[1]-1`, `r Report_Anxiety_Check_Control$df[2]`) =
+`r round(Report_Anxiety_Check_Control$coefficients[1,3], digits = 2)`, *p*<sub>corrected at 0.017</sub> 
+`r ifelse((Report_Anxiety_Check_Control$coefficients[1,4])<= 0.001 ,"< 0.001", ifelse((Report_Anxiety_Check_Control$coefficients[1,4])<= 0.01 ,"< 0.01", paste0("= ", round((Report_Anxiety_Check_Control$coefficients[1,4]), digit = 2))))`, η² = `r round(Eta_Anxiety_Check_Control, digit = 3)`). In the control condition, participants feel less anxious at the end of the experiment (M =
+`r round(Anxiety_Check_Control_Table[[2,2]], digit = 2)`, SD =
+`r round(Anxiety_Check_Control_Table[[2,3]], digit = 2)`) than at the beginning (M =
+`r round(Anxiety_Check_Control_Table[[1,2]], digit = 2)`, SD =
+`r round(Anxiety_Check_Control_Table[[1,3]], digit = 2)`, n =
+`r round(Anxiety_Check_Control_Table[[1,4]], digit = 2)`).
+
+Taken together, a linear regression on the whole sample reveals that the effect of experimental manipulation, increasing anxiety at the end of the experiment is `r ifelse(Report_Anxiety_Evolution_Check$coefficients[2,4]<= 0.05/3 ,"significantly", "not significantly")` higher in the threatening condition than in the control one (*b* =
+`r round(Report_Anxiety_Evolution_Check$coefficients[2,1], digits = 2)`,
+*F*(`r Report_Anxiety_Evolution_Check$df[1]-1`, `r Report_Anxiety_Evolution_Check$df[2]`) =
+`r round(Report_Anxiety_Evolution_Check$coefficients[2,3], digits = 2)`, *p*<sub>corrected at 0.017</sub> 
+`r ifelse((Report_Anxiety_Evolution_Check$coefficients[2,4])<= 0.001 ,"< 0.001", ifelse((Report_Anxiety_Evolution_Check$coefficients[2,4])<= 0.01 ,"< 0.01", paste0("= ", round((Report_Anxiety_Evolution_Check$coefficients[2,4]), digit = 2))))`, η² = `r round(rsq.partial(Anxiety_Evolution_Check)[[3]], digit = 3)`). 
+
 
 
 ### Arousal
-
-To check the effect of our manipulation on these variables, we will
-apply a Bonferroni Correction on these 3 analysis (Anxiety feelings,
-Arousal, Pleasure): .05/3 = 0.017
 
 
 ```{r Arousal Manip check}
@@ -622,6 +726,8 @@ Arousal, Pleasure): .05/3 = 0.017
 Arousal_Critical_Check<- lm(ArousalCritical ~ Threat_C, data = df)
 summary(Arousal_Critical_Check)
 rsq.partial(Arousal_Critical_Check)
+
+Report_Arousal_Critical_Check <- summary(Arousal_Critical_Check)
 
 
 # Equivalence Testing 
@@ -636,11 +742,70 @@ TOSTtwo(m1 = Arousal_Critical_Check_Table[[2,2]], sd1 = Arousal_Critical_Check_T
 
 ```
 
-### Pleasure
+Then we tested the effect of experimental conditions (Threat VS
+Control) on arousal level after the critical trial. This analysis reveals that there is `r ifelse(Report_Arousal_Critical_Check$coefficients[2,4]<= 0.05/3 ,"a significant", "a non significant")` effect of experimental condition on arousal level after the critical trial (*b* =
+`r round(Report_Arousal_Critical_Check$coefficients[2,1], digits = 2)`,
+*F*(`r Report_Arousal_Critical_Check$df[1]-1`, `r Report_Arousal_Critical_Check$df[2]`) =
+`r round(Report_Arousal_Critical_Check$coefficients[2,3], digits = 2)`, *p*<sub>corrected at 0.017</sub> 
+`r ifelse((Report_Arousal_Critical_Check$coefficients[2,4])<= 0.001 ,"< 0.001", ifelse((Report_Arousal_Critical_Check$coefficients[2,4])<= 0.01 ,"< 0.01", paste0("= ", round((Report_Arousal_Critical_Check$coefficients[2,4]), digit = 2))))`, η² = `r round(rsq.partial(Arousal_Critical_Check)[[3]], digit = 3)`). Participants in the threatening condition (M =
+`r round(Arousal_Critical_Check_Table[[2,2]], digit = 2)`, SD =
+`r round(Arousal_Critical_Check_Table[[2,3]], digit = 2)`, n =
+`r round(Arousal_Critical_Check_Table[[2,4]], digit = 2)`) report significantly higher arousal levels after the critical trial than participants in the control condition (M =
+`r round(Arousal_Critical_Check_Table[[1,2]], digit = 2)`, SD =
+`r round(Arousal_Critical_Check_Table[[1,3]], digit = 2)`, n =
+`r round(Arousal_Critical_Check_Table[[1,4]], digit = 2)`).
 
-To check the effect of our manipulation on these variables, we will
-apply a Bonferroni Correction on these 3 analysis (Anxiety feelings,
-Arousal, Pleasure): .05/3 = 0.017
+```{r Arousal Manip check_Trial1 and Divided, eval=FALSE}
+
+### Trial 1 : Training trial
+
+# Do participants differ on their arousal level after the first trial?
+
+Arousal_Trial1_Check<- lm(ArousalTrial1 ~ Threat_C, data = df)
+summary(Arousal_Trial1_Check)
+rsq.partial(Arousal_Trial1_Check)
+
+Report_Arousal_Trial1_Check <- summary(Arousal_Trial1_Check)
+
+
+# Equivalence Testing 
+Arousal_Trial1_Check_Table <- df %>%
+    group_by(Threat) %>%
+    summarise_at(vars(ArousalTrial1), list(Mean = mean, SD = sd, Ppt_Nb = length))
+
+TOSTtwo(m1 = Arousal_Trial1_Check_Table[[2,2]], sd1 = Arousal_Trial1_Check_Table[[2,3]], n1 = Arousal_Trial1_Check_Table[[2,4]],
+        m2 = Arousal_Trial1_Check_Table[[1,2]], sd2 = Arousal_Trial1_Check_Table[[1,3]], n2 = Arousal_Trial1_Check_Table[[1,4]],
+        alpha = alpha_ManipCheck, low_eqbound_d = -0.20, high_eqbound_d = 0.20)
+
+
+
+### Divided Attention trial
+
+# Do participants differ on their arousal level after the first trial?
+
+Arousal_Divided_Check<- lm(ArousalDivided ~ Threat_C, data = df)
+summary(Arousal_Divided_Check)
+rsq.partial(Arousal_Divided_Check)
+
+Report_Arousal_Divided_Check <- summary(Arousal_Divided_Check)
+
+
+# Equivalence Testing 
+Arousal_Divided_Check_Table <- df %>%
+    group_by(Threat) %>%
+    summarise_at(vars(ArousalDivided), list(Mean = mean, SD = sd, Ppt_Nb = length))
+
+TOSTtwo(m1 = Arousal_Divided_Check_Table[[2,2]], sd1 = Arousal_Divided_Check_Table[[2,3]], n1 = Arousal_Divided_Check_Table[[2,4]],
+        m2 = Arousal_Divided_Check_Table[[1,2]], sd2 = Arousal_Divided_Check_Table[[1,3]], n2 = Arousal_Divided_Check_Table[[1,4]],
+        alpha = alpha_ManipCheck, low_eqbound_d = -0.20, high_eqbound_d = 0.20)
+
+
+```
+
+In addition, in an exploratory way, we ran the same analysis on arousal after the training and the divided attention trials. Results are quite the same than after the critical trial.
+
+
+### Pleasure
 
 
 ```{r Pleasure Manip check}
@@ -650,6 +815,8 @@ Arousal, Pleasure): .05/3 = 0.017
 Pleasure_Critical_Check<- lm(PleasureCritical ~ Threat_C, data = df)
 summary(Pleasure_Critical_Check)
 rsq.partial(Pleasure_Critical_Check)
+
+Report_Pleasure_Critical_Check <- summary(Pleasure_Critical_Check)
 
 
 # Equivalence Testing 
@@ -664,6 +831,70 @@ TOSTtwo(m1 = Pleasure_Critical_Check_Table[[2,2]], sd1 = Pleasure_Critical_Check
 
 ```
 
+We also ran the same analysis on the pleasure variable to test the effect of experimental conditions (Threat VS
+Control) on negative or positive emotions felt after the critical trial. This analysis reveals that there is `r ifelse(Report_Pleasure_Critical_Check$coefficients[2,4]<= 0.05/3 ,"a significant", "a non significant")` effect of experimental condition on emotions felt after the critical trial (*b* =
+`r round(Report_Pleasure_Critical_Check$coefficients[2,1], digits = 2)`,
+*F*(`r Report_Pleasure_Critical_Check$df[1]-1`, `r Report_Pleasure_Critical_Check$df[2]`) =
+`r round(Report_Pleasure_Critical_Check$coefficients[2,3], digits = 2)`, *p*<sub>corrected at 0.017</sub> 
+`r ifelse((Report_Pleasure_Critical_Check$coefficients[2,4])<= 0.001 ,"< 0.001", ifelse((Report_Pleasure_Critical_Check$coefficients[2,4])<= 0.01 ,"< 0.01", paste0("= ", round((Report_Pleasure_Critical_Check$coefficients[2,4]), digit = 2))))`, η² = `r round(rsq.partial(Pleasure_Critical_Check)[[3]], digit = 3)`). Participants in the threatening condition (M =
+`r round(Pleasure_Critical_Check_Table[[2,2]], digit = 2)`, SD =
+`r round(Pleasure_Critical_Check_Table[[2,3]], digit = 2)`, n =
+`r round(Pleasure_Critical_Check_Table[[2,4]], digit = 2)`) report significantly lower positive emotions after the critical trial than participants in the control condition (M =
+`r round(Pleasure_Critical_Check_Table[[1,2]], digit = 2)`, SD =
+`r round(Pleasure_Critical_Check_Table[[1,3]], digit = 2)`, n =
+`r round(Pleasure_Critical_Check_Table[[1,4]], digit = 2)`).
+
+
+```{r Pleasure Manip check_Trial1 and Divided, eval=FALSE}
+
+### Trial 1 : Training trial
+
+# Do participants differ on their Pleasure level after the first trial?
+
+Pleasure_Trial1_Check<- lm(PleasureTrial1 ~ Threat_C, data = df)
+summary(Pleasure_Trial1_Check)
+rsq.partial(Pleasure_Trial1_Check)
+
+Report_Pleasure_Trial1_Check <- summary(Pleasure_Trial1_Check)
+
+
+# Equivalence Testing 
+Pleasure_Trial1_Check_Table <- df %>%
+    group_by(Threat) %>%
+    summarise_at(vars(PleasureTrial1), list(Mean = mean, SD = sd, Ppt_Nb = length))
+
+TOSTtwo(m1 = Pleasure_Trial1_Check_Table[[2,2]], sd1 = Pleasure_Trial1_Check_Table[[2,3]], n1 = Pleasure_Trial1_Check_Table[[2,4]],
+        m2 = Pleasure_Trial1_Check_Table[[1,2]], sd2 = Pleasure_Trial1_Check_Table[[1,3]], n2 = Pleasure_Trial1_Check_Table[[1,4]],
+        alpha = alpha_ManipCheck, low_eqbound_d = -0.20, high_eqbound_d = 0.20)
+
+
+
+### Divided Attention trial
+
+# Do participants differ on their Pleasure level after the first trial?
+
+Pleasure_Divided_Check<- lm(PleasureDivided ~ Threat_C, data = df)
+summary(Pleasure_Divided_Check)
+rsq.partial(Pleasure_Divided_Check)
+
+Report_Pleasure_Divided_Check <- summary(Pleasure_Divided_Check)
+
+
+# Equivalence Testing 
+Pleasure_Divided_Check_Table <- df %>%
+    group_by(Threat) %>%
+    summarise_at(vars(PleasureDivided), list(Mean = mean, SD = sd, Ppt_Nb = length))
+
+TOSTtwo(m1 = Pleasure_Divided_Check_Table[[2,2]], sd1 = Pleasure_Divided_Check_Table[[2,3]], n1 = Pleasure_Divided_Check_Table[[2,4]],
+        m2 = Pleasure_Divided_Check_Table[[1,2]], sd2 = Pleasure_Divided_Check_Table[[1,3]], n2 = Pleasure_Divided_Check_Table[[1,4]],
+        alpha = alpha_ManipCheck, low_eqbound_d = -0.20, high_eqbound_d = 0.20)
+
+
+```
+
+
+In addition, in an exploratory way, we ran the same analysis on emotion felt after the training and the divided attention trials. Results are quite the same than after the critical trial.
+
 
 
 ### Sense of Control: Exploratory analysis
@@ -675,6 +906,8 @@ TOSTtwo(m1 = Pleasure_Critical_Check_Table[[2,2]], sd1 = Pleasure_Critical_Check
 SenseControl_Critical_Check<- lm(SenseControlCritical ~ Threat_C, data = df)
 summary(SenseControl_Critical_Check)
 rsq.partial(SenseControl_Critical_Check)
+
+Report_SenseControl_Critical_Check <- summary(SenseControl_Critical_Check)
 
 
 # Equivalence Testing 
@@ -689,10 +922,72 @@ TOSTtwo(m1 = SenseControl_Critical_Check_Table[[2,2]], sd1 = SenseControl_Critic
 
 ```
 
+Finally, in an exploratory way, we analysed the effect of experimental conditions (Threat VS Control) on the sense of control participants report after the critical trial. Indeed, Even if we did not have a clear prediction given the influence of our manipulation on this variable, the sense of control is the third dimension measured in the SAM scale we used after each trial. So we decided to run some analysis on it. To analyse its effect, we keep the same alpha threshold we used for the manip check analyses (alpha = `r round(alpha_ManipCheck, digit = 3)`) in order to not so much inflate type I error rate and we find `r ifelse(Report_SenseControl_Critical_Check$coefficients[2,4]<= 0.05/3 ,"a significant", "a non significant")` effect of experimental condition on the sense of control after the critical trial (*b* =
+`r round(Report_SenseControl_Critical_Check$coefficients[2,1], digits = 2)`,
+*F*(`r Report_SenseControl_Critical_Check$df[1]-1`, `r Report_SenseControl_Critical_Check$df[2]`) =
+`r round(Report_SenseControl_Critical_Check$coefficients[2,3], digits = 2)`, *p*<sub>corrected at 0.017</sub> 
+`r ifelse((Report_SenseControl_Critical_Check$coefficients[2,4])<= 0.001 ,"< 0.001", ifelse((Report_SenseControl_Critical_Check$coefficients[2,4])<= 0.01 ,"< 0.01", paste0("= ", round((Report_SenseControl_Critical_Check$coefficients[2,4]), digit = 2))))`, η² = `r round(rsq.partial(SenseControl_Critical_Check)[[3]], digit = 3)`). Participants in the threatening condition (M =
+`r round(SenseControl_Critical_Check_Table[[2,2]], digit = 2)`, SD =
+`r round(SenseControl_Critical_Check_Table[[2,3]], digit = 2)`, n =
+`r round(SenseControl_Critical_Check_Table[[2,4]], digit = 2)`) report being significantly less able to control their feelings after the critical trial than participants in the control condition (M =
+`r round(SenseControl_Critical_Check_Table[[1,2]], digit = 2)`, SD =
+`r round(SenseControl_Critical_Check_Table[[1,3]], digit = 2)`, n =
+`r round(SenseControl_Critical_Check_Table[[1,4]], digit = 2)`).
+
+
+```{r Sense of Control Manip check_Trial1 and Divided, eval=FALSE}
+
+### Trial 1 : Training trial
+
+# Do participants differ on their Sense of Control level after the first trial?
+
+SenseControl_Trial1_Check<- lm(SenseControlTrial1 ~ Threat_C, data = df)
+summary(SenseControl_Trial1_Check)
+rsq.partial(SenseControl_Trial1_Check)
+
+Report_SenseControl_Trial1_Check <- summary(SenseControl_Trial1_Check)
+
+
+# Equivalence Testing 
+SenseControl_Trial1_Check_Table <- df %>%
+    group_by(Threat) %>%
+    summarise_at(vars(SenseControlTrial1), list(Mean = mean, SD = sd, Ppt_Nb = length))
+
+TOSTtwo(m1 = SenseControl_Trial1_Check_Table[[2,2]], sd1 = SenseControl_Trial1_Check_Table[[2,3]], n1 = SenseControl_Trial1_Check_Table[[2,4]],
+        m2 = SenseControl_Trial1_Check_Table[[1,2]], sd2 = SenseControl_Trial1_Check_Table[[1,3]], n2 = SenseControl_Trial1_Check_Table[[1,4]],
+        alpha = alpha_ManipCheck, low_eqbound_d = -0.20, high_eqbound_d = 0.20)
+
+
+
+### Divided Attention trial
+
+# Do participants differ on their Sense of Control level after the first trial?
+
+SenseControl_Divided_Check<- lm(SenseControlDivided ~ Threat_C, data = df)
+summary(SenseControl_Divided_Check)
+rsq.partial(SenseControl_Divided_Check)
+
+Report_SenseControl_Divided_Check <- summary(SenseControl_Divided_Check)
+
+
+# Equivalence Testing 
+SenseControl_Divided_Check_Table <- df %>%
+    group_by(Threat) %>%
+    summarise_at(vars(SenseControlDivided), list(Mean = mean, SD = sd, Ppt_Nb = length))
+
+TOSTtwo(m1 = SenseControl_Divided_Check_Table[[2,2]], sd1 = SenseControl_Divided_Check_Table[[2,3]], n1 = SenseControl_Divided_Check_Table[[2,4]],
+        m2 = SenseControl_Divided_Check_Table[[1,2]], sd2 = SenseControl_Divided_Check_Table[[1,3]], n2 = SenseControl_Divided_Check_Table[[1,4]],
+        alpha = alpha_ManipCheck, low_eqbound_d = -0.20, high_eqbound_d = 0.20)
+
+
+```
+
+In addition, in an exploratory way, we ran the same analysis on Sense of Control after the training and the divided attention trials. Results are quite the same than after the critical trial.
+
+
 
 
 ## Threat effect on noticing
-
 
 ```{r Congruency dataframes, include=FALSE}
 
@@ -707,7 +1002,6 @@ df_Incong <- df %>%
   filter(Congruency == "Incongruent")
 
 ```
-
 
 ### Threat: Congruent unexpected element
 
@@ -726,6 +1020,7 @@ summary(Threat_Cong_Cov)
 odds.ratio(Threat_Cong_Cov) # Calculate ODD RATIO of the model
 rsq.partial(Threat_Cong_Cov) # Calculate an equivalent of R²p of the model
 
+Coef_Threat_Cong_Cov <- summary(Threat_Cong_Cov)[[12]]
 
 # Equivalence testing
 Table_Threat_Cong_Nb <- table(df_Cong$Threat, dnn = "Threatening_Condition")
@@ -734,11 +1029,27 @@ Table_NoticingCritic_Threat_Cong_Nb <- table(df_Cong$Noticing_Critic, df_Cong$Th
 
 Table_NoticingCritic_Threat_Cong_Prop <- round(prop.table(table(df_Cong$Noticing_Critic, df_Cong$Threat, dnn = c("Congruent_element_Noticing", "Threatening_Condition")), margin = 2), digits = 2)
 
-TOSTtwo.prop(prop1 = Table_NoticingCritic_Threat_Cong_Prop[2, 2], n1 = Table_Threat_Cong_Nb[2],
-        prop2 = Table_NoticingCritic_Threat_Cong_Prop[2, 1], n2 = Table_Threat_Cong_Nb[1],
-        alpha = 0.05, low_eqbound = -.20, high_eqbound = .20)
+Critic_Cong_TOST <- TOSTtwo.prop(prop1 = Table_NoticingCritic_Threat_Cong_Prop[2, 2], n1 = Table_Threat_Cong_Nb[2],
+                                 prop2 = Table_NoticingCritic_Threat_Cong_Prop[2, 1], n2 = Table_Threat_Cong_Nb[1],
+                                 alpha = 0.05, low_eqbound = -.20, high_eqbound = .20)
+
+
+# Calculate the effect size in Cohen's h: 
+h_Critic_Threat_Cong <-  round(effectsize::cohens_h(Table_NoticingCritic_Threat_Cong_Nb, ci = 0.95, alternative = "two.sided", log = FALSE), digits = 2)
+
+# Calculate the effect size in Cohen's d: 
+round(esc::cohens_d(or =odds.ratio(Threat_Cong_Cov)[[2,1]]), digit =2)
+  
+# This Equivalence bounds of .20 for the effect of threat on congruent noticing means approximately a Cohen's d of:
+h_Critic_Threat_Cong_Bounds <-  round(ES.h(Table_NoticingCritic_Threat_Cong_Prop[2, 2]-((.20 - (Table_NoticingCritic_Threat_Cong_Prop[2, 1]-Table_NoticingCritic_Threat_Cong_Prop[2, 2]))/2), Table_NoticingCritic_Threat_Cong_Prop[2, 1]+((.20 - (Table_NoticingCritic_Threat_Cong_Prop[2, 1]-Table_NoticingCritic_Threat_Cong_Prop[2, 2]))/2)), digit = 2)
 
 ```
+
+On the noticing of the congruent unexpected element, a logistic regression revealed that the threatening manipulation of threat `r ifelse(Coef_Threat_Cong_Cov[[2,4]]<= 0.05 ,"have a significant", "do not have a significant")` effect on noticing (*b* = `r round(Threat_Cong_Cov$coefficients[["Threat_C"]], digits = 2)`, *z*(`r Threat_Cong_Cov[["df.residual"]]`) = `r round(Coef_Threat_Cong_Cov[[2,3]], digits = 2)`, *p* `r ifelse((Coef_Threat_Cong_Cov[[2,4]])<= 0.001 ,"< 0.001", ifelse((Coef_Threat_Cong_Cov[[2,4]])<= 0.01 ,"< 0.01", paste0("= ", round((Coef_Threat_Cong_Cov[[2,4]]), digit = 2))))`, *OR* = `r round(odds.ratio(Threat_Cong_Cov)[[2,1]], digit = 2)`, CI 95% [`r round(odds.ratio(Threat_Cong_Cov)[[2,2]], digit = 2)`, `r round(odds.ratio(Threat_Cong_Cov)[[2,3]], digit = 2)`]) and that this effect is neither made significant after controlling for the color on which participants have to focus on for the primary task (*b* = `r round(Threat_Cong_Cov$coefficients[["PrimaryTask_C"]], digits = 2)`, *z*(`r Threat_Cong_Cov[["df.residual"]]`) = `r round(Coef_Threat_Cong_Cov[[3,3]], digits = 2)`, *p* `r ifelse((Coef_Threat_Cong_Cov[[3,4]])<= 0.001 ,"< 0.001", ifelse((Coef_Threat_Cong_Cov[[3,4]])<= 0.01 ,"< 0.01", paste0("= ", round((Coef_Threat_Cong_Cov[[3,4]]), digit = 2))))`, *OR* = `r round(odds.ratio(Threat_Cong_Cov)[[3,1]], digit = 2)`, CI 95% [`r round(odds.ratio(Threat_Cong_Cov)[[3,2]], digit = 2)`, `r round(odds.ratio(Threat_Cong_Cov)[[3,3]], digit = 2)`]), nor after controlling the number of error on the bounce-counting task for the critical trial even if this last variable was significant predicting noticing of the congruent unexpected element (*b* = `r round(Threat_Cong_Cov$coefficients[["Error_TrialCritic"]], digits = 2)`, *z*(`r Threat_Cong_Cov[["df.residual"]]`) = `r round(Coef_Threat_Cong_Cov[[4,3]], digits = 2)`, *p* `r ifelse((Coef_Threat_Cong_Cov[[4,4]])<= 0.001 ,"< 0.001", ifelse((Coef_Threat_Cong_Cov[[4,4]])<= 0.01 ,"< 0.01", paste0("= ", round((Coef_Threat_Cong_Cov[[4,4]]), digit = 2))))`, *OR* = `r round(odds.ratio(Threat_Cong_Cov)[[4,1]], digit = 2)`, CI 95% [`r round(odds.ratio(Threat_Cong_Cov)[[4,2]], digit = 2)`, `r round(odds.ratio(Threat_Cong_Cov)[[4,3]], digit = 2)`]). This last result show that the more participants make error on the bounce counting task, the less they notice the congruent unexpected element.
+
+Some equivalent testing hypothesis tend to confirm the non-significant results suggesting that the threatening manipulation do not have an effect on the noticing of the congruent unexpected element (*z* = `r ifelse((Critic_Cong_TOST$TOST_z1)<(Critic_Cong_TOST$TOST_z2) ,round(Critic_Cong_TOST$TOST_z1, digit=2), round(Critic_Cong_TOST$TOST_z2, digit=2))`, *p* `r ifelse((Critic_Cong_TOST$TOST_p1)>(Critic_Cong_TOST$TOST_p2) & (Critic_Cong_TOST$TOST_p1)<=0.001, "< 0.001", ifelse((Critic_Cong_TOST$TOST_p1)>(Critic_Cong_TOST$TOST_p2) & (Critic_Cong_TOST$TOST_p1)<= 0.01 ,"< 0.01", ifelse((Critic_Cong_TOST$TOST_p1)>(Critic_Cong_TOST$TOST_p2) & (Critic_Cong_TOST$TOST_p1)>= 0.01 , paste0("= ", round((Critic_Cong_TOST$TOST_p1), digit = 2)), ifelse((Critic_Cong_TOST$TOST_p1)<(Critic_Cong_TOST$TOST_p2) & (Critic_Cong_TOST$TOST_p2)<=0.001, "< 0.001", ifelse((Critic_Cong_TOST$TOST_p1)<(Critic_Cong_TOST$TOST_p2) & (Critic_Cong_TOST$TOST_p2)<= 0.01 ,"< 0.01", ifelse((Critic_Cong_TOST$TOST_p1)<(Critic_Cong_TOST$TOST_p2) & (Critic_Cong_TOST$TOST_p2)>= 0.01 , paste0("= ", round((Critic_Cong_TOST$TOST_p2), digit = 2))))))))`, with low equivalence bound = `r Critic_Cong_TOST$low_eqbound`, high equivalent bound  = `r Critic_Cong_TOST$high_eqbound`, and 90% CI [`r round(Critic_Cong_TOST$LL_CI_TOST, digit=3)`, `r round(Critic_Cong_TOST$UL_CI_TOST, digit=3)`]). Given the effect size boundaries we used (20% proportion differences around `r (Table_NoticingCritic_Threat_Cong_Prop[[2,1]]+ Table_NoticingCritic_Threat_Cong_Prop[[2,2]])/2*100`% noticing), we can conclude that the difference in noticing on the congruent element between the control and the threatening conditions (respectively `r Table_NoticingCritic_Threat_Cong_Prop[[2,1]]*100`% and `r Table_NoticingCritic_Threat_Cong_Prop[[2,2]]*100`% noticings, which represent a Cohen's *h* of `r h_Critic_Threat_Cong[[1]]`, `r h_Critic_Threat_Cong[[2]]*100`% CI [`r h_Critic_Threat_Cong[[3]]`, `r h_Critic_Threat_Cong[[4]]`]) is statistically lower than a Cohen's *h* = `r h_Critic_Threat_Cong_Bounds`, corresponding to a small to medium effect size.
+
+Warning: rajouter le fait que le test d'équivalence est également significatif via l'utilisation d'un SESOI de .10 même s'il s'agit d'un SESOI défini à Posteriori ?
 
 
 ### Threat: Incongruent unexpected element
@@ -758,6 +1069,9 @@ summary(Threat_Incong_Cov)
 odds.ratio(Threat_Incong_Cov) # Calculate ODD RATIO of the model
 rsq.partial(Threat_Incong_Cov) # Calculate an equivalent of R²p of the model
 
+Coef_Threat_Incong_Cov <- summary(Threat_Incong_Cov)[[12]]
+
+
 # Equivalence testing
 Table_Threat_Incong_Nb <- table(df_Incong$Threat, dnn = "Threatening_Condition")
 
@@ -765,15 +1079,37 @@ Table_NoticingCritic_Threat_Incong_Nb <- table(df_Incong$Noticing_Critic, df_Inc
 
 Table_NoticingCritic_Threat_Incong_Prop <- round(prop.table(table(df_Incong$Noticing_Critic, df_Incong$Threat, dnn = c("Incongruent_element_Noticing", "Threatening_Condition")), margin = 2), digits = 2)
 
-TOSTtwo.prop(prop1 = Table_NoticingCritic_Threat_Incong_Prop[2, 2], n1 = Table_Threat_Incong_Nb[2],
+Critic_Incong_TOST <- TOSTtwo.prop(prop1 = Table_NoticingCritic_Threat_Incong_Prop[2, 2], n1 = Table_Threat_Incong_Nb[2],
         prop2 = Table_NoticingCritic_Threat_Incong_Prop[2, 1], n2 = Table_Threat_Incong_Nb[1],
         alpha = 0.05, low_eqbound = -.20, high_eqbound = .20)
 
+
+# Calculate the effect size in Cohen's h: 
+h_Critic_Threat_Incong <-  round(cohens_h(Table_NoticingCritic_Threat_Incong_Nb, ci = 0.95, alternative = "two.sided", log = FALSE), digits = 2)
+
+# Calculate the effect size in Cohen's d: 
+round(esc::cohens_d(or =odds.ratio(Threat_Incong_Cov)[[2,1]]), digit =2)
+
+# This Equivalence bounds of .20 for the effect of threat on incongruent noticing means approximately a Cohen's d of:
+h_Critic_Threat_Incong_Bounds <-  round(ES.h(Table_NoticingCritic_Threat_Incong_Prop[2, 2]-((.20 - (Table_NoticingCritic_Threat_Incong_Prop[2, 1]-Table_NoticingCritic_Threat_Incong_Prop[2, 2]))/2), Table_NoticingCritic_Threat_Incong_Prop[2, 1]+((.20 - (Table_NoticingCritic_Threat_Incong_Prop[2, 1]-Table_NoticingCritic_Threat_Incong_Prop[2, 2]))/2)), digit = 2)
+
 ```
+
+On the noticing of the Incongruent unexpected element, a second logistic regression revealed that the threatening manipulation of threat `r ifelse(Coef_Threat_Incong_Cov[[2,4]]<= 0.05 ,"have a significant", "do not have a significant")` effect on noticing (*b* = `r round(Threat_Incong_Cov$coefficients[["Threat_C"]], digits = 2)`, *z*(`r Threat_Incong_Cov[["df.residual"]]`) = `r round(Coef_Threat_Incong_Cov[[2,3]], digits = 2)`, *p* `r ifelse((Coef_Threat_Incong_Cov[[2,4]])<= 0.001 ,"< 0.001", ifelse((Coef_Threat_Incong_Cov[[2,4]])<= 0.01 ,"< 0.01", paste0("= ", round((Coef_Threat_Incong_Cov[[2,4]]), digit = 2))))`, *OR* = `r round(odds.ratio(Threat_Incong_Cov)[[2,1]], digit = 2)`, CI 95% [`r round(odds.ratio(Threat_Incong_Cov)[[2,2]], digit = 2)`, `r round(odds.ratio(Threat_Incong_Cov)[[2,3]], digit = 2)`]) and that this effect is hold significant after controlling for the color on which participants have to focus on for the primary task (*b* = `r round(Threat_Incong_Cov$coefficients[["PrimaryTask_C"]], digits = 2)`, *z*(`r Threat_Incong_Cov[["df.residual"]]`) = `r round(Coef_Threat_Incong_Cov[[3,3]], digits = 2)`, *p* `r ifelse((Coef_Threat_Incong_Cov[[3,4]])<= 0.001 ,"< 0.001", ifelse((Coef_Threat_Incong_Cov[[3,4]])<= 0.01 ,"< 0.01", paste0("= ", round((Coef_Threat_Incong_Cov[[3,4]]), digit = 2))))`, *OR* = `r round(odds.ratio(Threat_Incong_Cov)[[3,1]], digit = 2)`, CI 95% [`r round(odds.ratio(Threat_Incong_Cov)[[3,2]], digit = 2)`, `r round(odds.ratio(Threat_Incong_Cov)[[3,3]], digit = 2)`]), and participant's errors on the bounce-counting task (*b* = `r round(Threat_Incong_Cov$coefficients[["Error_TrialCritic"]], digits = 2)`, *z*(`r Threat_Incong_Cov[["df.residual"]]`) = `r round(Coef_Threat_Incong_Cov[[4,3]], digits = 2)`, *p* `r ifelse((Coef_Threat_Incong_Cov[[4,4]])<= 0.001 ,"< 0.001", ifelse((Coef_Threat_Incong_Cov[[4,4]])<= 0.01 ,"< 0.01", paste0("= ", round((Coef_Threat_Incong_Cov[[4,4]]), digit = 2))))`, *OR* = `r round(odds.ratio(Threat_Incong_Cov)[[4,1]], digit = 2)`, CI 95% [`r round(odds.ratio(Threat_Incong_Cov)[[4,2]], digit = 2)`, `r round(odds.ratio(Threat_Incong_Cov)[[4,3]], digit = 2)`]). Contrary to the analysis on the congruent unexpected element, this effect of bounce counting performance on noticing is only marginally significant but is in the same way than before: the more participants make error on the bounce counting task, the less they tend to notice the incongruent unexpected element. Moreover, according to our hypothesis pre-registrated, the first result suggest that a threatening situation decrease the noticing of an incongruent element (`r Table_NoticingCritic_Threat_Incong_Prop[[2,2]]*100`% notincing) in comparison to a more neutral situation (`r Table_NoticingCritic_Threat_Incong_Prop[[2,1]]*100`% noticing).
+
+Finally, equivalence testing analysis add some information to this results since it allows us to conclude that this effect is significantly lower than a difference of 20% in proportion between the two conditions (*z* = `r ifelse((Critic_Incong_TOST$TOST_z1)<(Critic_Incong_TOST$TOST_z2) ,round(Critic_Incong_TOST$TOST_z1, digit=2), round(Critic_Incong_TOST$TOST_z2, digit=2))`, *p* `r ifelse((Critic_Incong_TOST$TOST_p1)>(Critic_Incong_TOST$TOST_p2) & (Critic_Incong_TOST$TOST_p1)<=0.001, "< 0.001", ifelse((Critic_Incong_TOST$TOST_p1)>(Critic_Incong_TOST$TOST_p2) & (Critic_Incong_TOST$TOST_p1)<= 0.01 ,"< 0.01", ifelse((Critic_Incong_TOST$TOST_p1)>(Critic_Incong_TOST$TOST_p2) & (Critic_Incong_TOST$TOST_p1)>= 0.01 , paste0("= ", round((Critic_Incong_TOST$TOST_p1), digit = 2)), ifelse((Critic_Incong_TOST$TOST_p1)<(Critic_Incong_TOST$TOST_p2) & (Critic_Incong_TOST$TOST_p2)<=0.001, "< 0.001", ifelse((Critic_Incong_TOST$TOST_p1)<(Critic_Incong_TOST$TOST_p2) & (Critic_Incong_TOST$TOST_p2)<= 0.01 ,"< 0.01", ifelse((Critic_Incong_TOST$TOST_p1)<(Critic_Incong_TOST$TOST_p2) & (Critic_Incong_TOST$TOST_p2)>= 0.01 , paste0("= ", round((Critic_Incong_TOST$TOST_p2), digit = 2))))))))`, with low equivalence bound = `r Critic_Incong_TOST$low_eqbound`, high equivalent bound  = `r Critic_Incong_TOST$high_eqbound`, and 90% CI [`r round(Critic_Incong_TOST$LL_CI_TOST, digit=3)`, `r round(Critic_Incong_TOST$UL_CI_TOST, digit=3)`]).
+So, given the effect size boundaries we used (20% proportion differences around `r (Table_NoticingCritic_Threat_Incong_Prop[[2,1]]+ Table_NoticingCritic_Threat_Incong_Prop[[2,2]])/2*100`% noticing), we can conclude that the difference in noticing on the incongruent element between the control and the threatening conditions (respectively `r Table_NoticingCritic_Threat_Incong_Prop[[2,1]]*100`% and `r Table_NoticingCritic_Threat_Incong_Prop[[2,2]]*100`% noticings, which represent a Cohen's *h* of `r h_Critic_Threat_Incong[[1]]`, `r h_Critic_Threat_Incong[[2]]*100`% CI [`r h_Critic_Threat_Incong[[3]]`, `r h_Critic_Threat_Incong[[4]]`]) is statistically lower than a Cohen's *h* = `r h_Critic_Threat_Incong_Bounds`, corresponding to a medium effect size.
+
+Warning: But why Cohen's *h* = ES.h(.25, .12) = `r h_Critic_Threat_Incong` is not equal to a converted Cohen's *d* from (OR = .44): Cohen's *d* = cohens_d(or =0.44248) = `r round(esc::cohens_d(or =0.44248), digit =2)`
+
+To understand Cohen's *h*, see: <https://www.statskingdom.com/effect-size-calculator.html> and <https://en.wikipedia.org/wiki/Cohen%27s_h>
+
+
 
 ### Threat: Threat X Congruency interaction
 
-According to our preregistration, we will use a p-value threshold of aplha = 0.01 on this analysis
+According to our preregistration, we will used a p-value threshold of
+aplha = 0.01 on this analysis.
 
 ```{r Threat X Congruency interaction}
 
@@ -781,22 +1117,62 @@ According to our preregistration, we will use a p-value threshold of aplha = 0.0
 
 ThreatXCongruency <- glm(Noticing_Critic ~ Threat_C * Congruency_C , family ="binomial", data = df)
 summary(ThreatXCongruency)
-odds.ratio(ThreatXCongruency) # Calculate ODD RATIO of the model
+odds.ratio(ThreatXCongruency, level = 0.99) # Calculate ODD RATIO of the model
 rsq.partial(ThreatXCongruency) # Calculate an equivalent of R²p of the model
 
 
 # With Covariates
 ThreatXCongruency_Cov <- glm(Noticing_Critic ~ Threat_C * Congruency_C + PrimaryTask_C + Error_TrialCritic , family ="binomial", data = df)
 summary(ThreatXCongruency_Cov)
-odds.ratio(ThreatXCongruency_Cov) # Calculate ODD RATIO of the model
+odds.ratio(ThreatXCongruency_Cov, level = 0.99) # Calculate ODD RATIO of the model
 rsq.partial(ThreatXCongruency_Cov) # Calculate an equivalent of R²p of the model
+
+Coef_ThreatXCongruency_Cov <- summary(ThreatXCongruency_Cov)[[12]]
+
+
+## Noticing rate
+
+## Threat manipulation
+Table_Threat_Nb <- table(df$Threat, dnn = "Threatening_Condition")
+
+Table_NoticingCritic_Threat_Nb <- table(df$Noticing_Critic, df$Threat, dnn = c("Unexpected_element_Noticing", "Threatening_Condition"))
+
+Table_NoticingCritic_Threat_Prop <- round(prop.table(table(df$Noticing_Critic, df$Threat, dnn = c("Unexpected_element_Noticing", "Threatening_Condition")), margin = 2), digits = 2)
+
+## Congruency manipulation
+Table_Congruency_Nb <- table(df$Congruency, dnn = "Congruency_Condition")
+
+Table_NoticingCritic_Congruency_Nb <- table(df$Noticing_Critic, df$Congruency, dnn = c("Unexpected_element_Noticing", "Congruency_Condition"))
+
+Table_NoticingCritic_Congruency_Prop <- round(prop.table(table(df$Noticing_Critic, df$Congruency, dnn = c("Unexpected_element_Noticing", "Congruency_Condition")), margin = 2), digits = 2)
 
 
 ```
 
-################################################"
+On the interaction between congruency and experimental manipulation, according to our pre-registration we used an alpha threshold of alpha = 0.01 in order not to inflate so much the type I error rate and results reveal `r ifelse(Coef_ThreatXCongruency_Cov[[6,4]]<= 0.01 ,"a significant", "a non significant")` interaction on noticing during the critical trial 
+
+(*b* = `r round(ThreatXCongruency_Cov$coefficients[["Threat_C:Congruency_C"]], digits = 2)`, *z*(`r ThreatXCongruency_Cov[["df.residual"]]`) = `r round(Coef_ThreatXCongruency_Cov[[6,3]], digits = 2)`, *p*<sub>corrected at 0.01</sub> `r ifelse((Coef_ThreatXCongruency_Cov[[6,4]])<= 0.001 ,"< 0.001", ifelse((Coef_ThreatXCongruency_Cov[[6,4]])<= 0.01 ,"< 0.01", paste0("= ", round((Coef_ThreatXCongruency_Cov[[6,4]]), digit = 2))))`, *OR* = `r round(odds.ratio(ThreatXCongruency_Cov)[[6,1]], digit = 2)`, CI 99% [`r round(odds.ratio(ThreatXCongruency_Cov)[[6,2]], digit = 2)`, `r round(odds.ratio(ThreatXCongruency_Cov)[[6,3]], digit = 2)`]).
+Moreover, this interaction is maintained after controlling for the effect of the color participants have to focus on for the bounce counting task
+
+(*b* = `r round(ThreatXCongruency_Cov$coefficients[["PrimaryTask_C"]], digits = 2)`, *z*(`r ThreatXCongruency_Cov[["df.residual"]]`) = `r round(Coef_ThreatXCongruency_Cov[[4,3]], digits = 2)`, *p*<sub>corrected at 0.01</sub> `r ifelse((Coef_ThreatXCongruency_Cov[[4,4]])<= 0.001 ,"< 0.001", ifelse((Coef_ThreatXCongruency_Cov[[4,4]])<= 0.01 ,"< 0.01", paste0("= ", round((Coef_ThreatXCongruency_Cov[[4,4]]), digit = 2))))`, *OR* = `r round(odds.ratio(ThreatXCongruency_Cov)[[4,1]], digit = 2)`, CI 99% [`r round(odds.ratio(ThreatXCongruency_Cov)[[4,2]], digit = 2)`, `r round(odds.ratio(ThreatXCongruency_Cov)[[4,3]], digit = 2)`]) and their performance on this task for which a better performance is marginally associated with more noticing of the unexpected element using the 0.01 alpha threshold 
+
+(*b* = `r round(ThreatXCongruency_Cov$coefficients[["Error_TrialCritic"]], digits = 2)`, *z*(`r ThreatXCongruency_Cov[["df.residual"]]`) = `r round(Coef_ThreatXCongruency_Cov[[5,3]], digits = 2)`, *p*<sub>corrected at 0.01</sub> `r ifelse((Coef_ThreatXCongruency_Cov[[5,4]])<= 0.001 ,"< 0.001", ifelse((Coef_ThreatXCongruency_Cov[[5,4]])<= 0.01 ,"< 0.01", paste0("= ", round((Coef_ThreatXCongruency_Cov[[5,4]]), digit = 2))))`, *OR* = `r round(odds.ratio(ThreatXCongruency_Cov)[[5,1]], digit = 2)`, CI 99% [`r round(odds.ratio(ThreatXCongruency_Cov)[[5,2]], digit = 2)`, `r round(odds.ratio(ThreatXCongruency_Cov)[[5,3]], digit = 2)`]).
+
+In terms of main effect, we find `r ifelse(Coef_ThreatXCongruency_Cov[[2,4]]<= 0.01 ,"a significant", "a non significant")` effect of experimental manipulation suggesting that participants notice less the unexpected element in the threatening condition (`r Table_NoticingCritic_Threat_Prop[[2,2]]*100`% noticing) in comparison to the control one (`r Table_NoticingCritic_Threat_Prop[[2,1]]*100`% noticing, 
 
 
+*b* = `r round(ThreatXCongruency_Cov$coefficients[["Threat_C"]], digits = 2)`, *z*(`r ThreatXCongruency_Cov[["df.residual"]]`) = `r round(Coef_ThreatXCongruency_Cov[[2,3]], digits = 2)`, *p*<sub>corrected at 0.01</sub> `r ifelse((Coef_ThreatXCongruency_Cov[[2,4]])<= 0.001 ,"< 0.001", ifelse((Coef_ThreatXCongruency_Cov[[2,4]])<= 0.01 ,"< 0.01", paste0("= ", round((Coef_ThreatXCongruency_Cov[[2,4]]), digit = 2))))`, *OR* = `r round(odds.ratio(ThreatXCongruency_Cov)[[2,1]], digit = 2)`, CI 99% [`r round(odds.ratio(ThreatXCongruency_Cov)[[2,2]], digit = 2)`, `r round(odds.ratio(ThreatXCongruency_Cov)[[2,3]], digit = 2)`]). In addition, we find `r ifelse(Coef_ThreatXCongruency_Cov[[3,4]]<= 0.01 ,"a significant", "a non significant")` effect of congruency on noticing revealing that participant better notice the unexpected element when it is congruent with task settings (`r Table_NoticingCritic_Congruency_Prop[[2,2]]*100`% noticing) than when it is incongruent (`r Table_NoticingCritic_Congruency_Prop[[2,1]]*100`% noticing, 
+
+*b* = `r round(ThreatXCongruency_Cov$coefficients[["Congruency_C"]], digits = 2)`, *z*(`r ThreatXCongruency_Cov[["df.residual"]]`) = `r round(Coef_ThreatXCongruency_Cov[[3,3]], digits = 2)`, *p*<sub>corrected at 0.01</sub> `r ifelse((Coef_ThreatXCongruency_Cov[[3,4]])<= 0.001 ,"< 0.001", ifelse((Coef_ThreatXCongruency_Cov[[3,4]])<= 0.01 ,"< 0.01", paste0("= ", round((Coef_ThreatXCongruency_Cov[[3,4]]), digit = 2))))`, *OR* = `r round(odds.ratio(ThreatXCongruency_Cov)[[3,1]], digit = 2)`, CI 99% [`r round(odds.ratio(ThreatXCongruency_Cov)[[3,2]], digit = 2)`, `r round(odds.ratio(ThreatXCongruency_Cov)[[3,3]], digit = 2)`]). However, it is hard to conclude on this last effect since there is a confound on this variable which is no controlled for. Indeed, the congruency variable do not only manipulate the congruency of the unexpected element but also the perceptual load of each trial (by the number of targets and distractors in the main task) which often have an impact on noticing. So, even if we can't conclude that the mere congruency have an impact on noticing (and specifically given our standardised effect size *b* = `r round(ThreatXCongruency_Cov$coefficients[["Congruency_C"]], digits = 2)`) since we don't control for perceptual load, results from the litterature (and from own previous experiments) sytematically show that the noticing of a congruent unexpected element is higher than a incongruent one, controlling for the number of stimuli whitin the task. 
+
+rajouter le fait que c'est pas si génant paske la tache est plus dure mais on identifie quand même l'élément inattendu congruent....
+
+
+Blablabla, what this interaction means exactely?
+
+
+
+###############################################"
 
 ## Anxiety effect on notincing
 
@@ -817,8 +1193,23 @@ alpha_AnxietyArousal <- ifelse(Cor_Anxiety_Arousal[["p.value"]]<= 0.05 & Cor_Anx
 
 ```
 
-Since the correlation between the anxiety score (difference between pre and post measurements) and the arousal level after the critical trial is `r ifelse(Cor_Anxiety_Arousal[["p.value"]]<= 0.05 ,"significant", "not significant")`, and the link between these variable is `r ifelse(Cor_Anxiety_Arousal[["estimate"]][["cor"]]<= 0.5 ,"lesser", "higher")` than *r* = 0.50 (*r* = `r round(Cor_Anxiety_Arousal[["estimate"]][["cor"]], digit = 2)`, t(`r Cor_Anxiety_Arousal[["parameter"]][["df"]]`) = `r round(Cor_Anxiety_Arousal[["statistic"]][["t"]], digit=2)`, *p* `r ifelse((Cor_Anxiety_Arousal[["p.value"]])<= 0.001 ,"< 0.001", ifelse((Cor_Anxiety_Arousal[["p.value"]])<= 0.01 ,"< 0.01", paste0("= ", round((Cor_Anxiety_Arousal[["p.value"]]), digit = 2))))`, CI 95% [`r round(Cor_Anxiety_Arousal[["conf.int"]][[1]], digit = 2)`, `r round(Cor_Anxiety_Arousal[["conf.int"]][[2]], digit = 2)`]), according to our preregistration we will use a significance alpha threshold of alpha = `r ifelse(Cor_Anxiety_Arousal[["estimate"]][["cor"]]<= 0.5 ,"0.05 (without applying any correction)", ".05/2 = .025 (to correct for multiple analysis)")` for the next analyses: the effect of Anxiety and Arousal on noticing rates.
-
+Since the correlation between the anxiety score (difference between pre
+and post measurements) and the arousal level after the critical trial is
+`r ifelse(Cor_Anxiety_Arousal[["p.value"]]<= 0.05 ,"significant", "not significant")`,
+and the link between these variable is
+`r ifelse(Cor_Anxiety_Arousal[["estimate"]][["cor"]]<= 0.5 ,"lesser", "higher")`
+than *r* = 0.50 (*r* =
+`r round(Cor_Anxiety_Arousal[["estimate"]][["cor"]], digit = 2)`,
+t(`r Cor_Anxiety_Arousal[["parameter"]][["df"]]`) =
+`r round(Cor_Anxiety_Arousal[["statistic"]][["t"]], digit=2)`, *p*
+`r ifelse((Cor_Anxiety_Arousal[["p.value"]])<= 0.001 ,"< 0.001", ifelse((Cor_Anxiety_Arousal[["p.value"]])<= 0.01 ,"< 0.01", paste0("= ", round((Cor_Anxiety_Arousal[["p.value"]]), digit = 2))))`,
+CI 95% [`r round(Cor_Anxiety_Arousal[["conf.int"]][[1]], digit = 2)`,
+`r round(Cor_Anxiety_Arousal[["conf.int"]][[2]], digit = 2)`]),
+according to our preregistration we will use a significance alpha
+threshold of alpha =
+`r ifelse(Cor_Anxiety_Arousal[["estimate"]][["cor"]]<= 0.5 ,"0.05 (without applying any correction)", ".05/2 = .025 (to correct for multiple analysis)")`
+for the next analyses: the effect of Anxiety and Arousal on noticing
+rates.
 
 ### Anxiety/Arousal: Congruent unexpected element
 
@@ -867,7 +1258,6 @@ Cor_Noticing_Arousal_Cong <- cor.test(df_Cong$Noticing_Critic, df_Cong$ArousalCr
 TOSTr(r = Cor_Noticing_Arousal_Cong[["estimate"]][["cor"]], n = nrow(df_Cong), alpha = alpha_AnxietyArousal, low_eqbound_r = -.20, high_eqbound_r = .20)
 
 ```
-
 
 ### Anxiety/Arousal: Incongruent unexpected element
 
@@ -918,10 +1308,10 @@ TOSTr(r = Cor_Noticing_Arousal_Incong[["estimate"]][["cor"]], n = nrow(df_Incong
 
 ```
 
-
 ### Anxiety/Arousal: Threat X Congruency interaction
 
-According to our preregistration, we will use a p-value threshold of aplha = 0.01 on this analysis
+According to our preregistration, we will use a p-value threshold of
+aplha = 0.01 on this analysis
 
 ```{r Anxiety/Arousal X Congruency interaction}
 
@@ -1018,7 +1408,6 @@ rsq.partial(Interact_ThreatXArousal_Incong) # Calculate an equivalent of R²p of
 
 ```
 
-
 ### Interaction: Equivalence testing
 
 #### TOST Anxiety: Congruent unexpected element
@@ -1048,7 +1437,6 @@ TOSTr(r = Cor_ThreatCond_Noticing_Anxiety_Cong[["estimate"]][["cor"]], n = nrow(
 
 ```
 
-
 #### TOST Anxiety: Incongruent unexpected element
 
 ```{r TOST Noticing~Anxiety_Incongruent}
@@ -1076,10 +1464,10 @@ TOSTr(r = Cor_ThreatCond_Noticing_Anxiety_Incong[["estimate"]][["cor"]], n = nro
 
 ```
 
+#### TOST Exploratory: Arousal
 
-#### TOST Exploratory: Arousal 
-
-In order not to inflate type I error rates, we will use a alpha threshold of 0.01 for these exploratory equivalence analyses 
+In order not to inflate type I error rates, we will use a alpha
+threshold of 0.01 for these exploratory equivalence analyses
 
 ##### TOST Arousal: Congruent unexpected element
 
@@ -1108,7 +1496,6 @@ TOSTr(r = Cor_ThreatCond_Noticing_Arousal_Cong[["estimate"]][["cor"]], n = nrow(
 
 ```
 
-
 ##### TOST Arousal: Incongruent unexpected element
 
 ```{r TOST Noticing~Arousal_Incongruent, eval=FALSE}
@@ -1135,7 +1522,6 @@ Cor_ThreatCond_Noticing_Arousal_Incong <- cor.test(df_Threat_Incong$Noticing_Cri
 TOSTr(r = Cor_ThreatCond_Noticing_Arousal_Incong[["estimate"]][["cor"]], n = nrow(df_Threat_Incong), alpha = .01, low_eqbound_r = -.20, high_eqbound_r = .20)
 
 ```
-
 
 ## Bounce counting performance
 
@@ -1169,7 +1555,6 @@ TOSTtwo(m1 = Counting_Cong_Table[[2,2]], sd1 = Counting_Cong_Table[[2,3]], n1 = 
 
 ```
 
-
 ### Counting: Incongruent unexpected element
 
 ```{r Effect of Threat on counting performance_Incongruent}
@@ -1192,7 +1577,8 @@ rsq.partial(Counting_Incong_Cov)
 
 ### Counting: Threat X Congruency Interaction
 
-According to other analyses, we will use a p-value threshold of aplha = 0.01 on this analysis
+According to other analyses, we will use a p-value threshold of aplha =
+0.01 on this analysis
 
 ```{r Interaction Threat * Congruency on counting performance}
 
@@ -1211,14 +1597,41 @@ rsq.partial(Counting_Interact_Cov)
 
 ## Other Inattentional Blindness trials
 
-We plan to analyse the effect of experimental conditions on noticing rates in the Divided attention and the full attention trials but we will do run these analysis in an exploratory way since we do not have precise hypothesis on these trials except for the same hypothesis we expect on the critical trial. However, we do not have planned these analyses in this pre-registration script.
+We plan to analyse the effect of experimental conditions on noticing
+rates in the Divided attention and the full attention trials but we will
+do run these analysis in an exploratory way since we do not have precise
+hypothesis on these trials except for the same hypothesis we expect on
+the critical trial. However, we do not have planned these analyses in
+this pre-registration script.
+Ptète que je pourrai faire du mixte pour tester les trois essais en même temps ?
 
 ## Multivers analysis
 
-We plan to use this type of analysis to test the robustness of some effects according to multiple exclusion criterion, however, we do not have planned these analyses in this pre-registration script..
+We plan to use this type of analysis to test the robustness of some
+effects according to multiple exclusion criterion, however, we do not
+have planned these analyses in this pre-registration script..
 
 ## Random forest analysis
 
-We plan to maybe run conditional random forest analysis to analyse in an exploratory way the variables that best predict noticing rates on the several inattentional blindness trials. However, we do not have planned these analyses in this pre-registration script..
+We plan to maybe run conditional random forest analysis to analyse in an
+exploratory way the variables that best predict noticing rates on the
+several inattentional blindness trials. However, we do not have planned
+these analyses in this pre-registration script..
+
+
+## Effect of primary task on noticing
+
+```{r Primary task effect}
+
+# Effect of noticing on primary task errors
+Primary <- lm(Error_TrialCritic ~ Noticing_Critic + Congruency_C , data = df)
+summary(Primary)
+
+# Effect of noticing on primary task errors
+Primary_Noticing <- glm(Noticing_Critic  ~ Error_TrialCritic + Congruency_C , family = "binomial", data = df)
+summary(Primary_Noticing)
+
+
+```
 
 
